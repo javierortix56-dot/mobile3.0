@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#ffffff">
-    <title>J&M Finance V52</title>
+    <title>J&M Finance V53</title>
     
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -58,8 +58,9 @@
         .stat-val { font-size: 15px; font-weight: 700; }
         .inc-col { color: #34D399; } .exp-col { color: #F87171; }
 
-        .tc-widget { background: rgba(0,0,0,0.2); padding: 4px 10px; border-radius: 8px; font-size: 11px; display: flex; align-items: center; gap: 5px; border: 1px solid rgba(255,255,255,0.1); }
-        .tc-inp { background: transparent; border: none; color: white; font-weight: 700; width: 40px; text-align: right; font-size: 12px; border-bottom: 1px solid rgba(255,255,255,0.3); padding: 0; }
+        .rates-row { display: flex; gap: 5px; }
+        .tc-widget { background: rgba(0,0,0,0.2); padding: 4px 8px; border-radius: 8px; font-size: 10px; display: flex; align-items: center; gap: 5px; border: 1px solid rgba(255,255,255,0.1); }
+        .tc-inp { background: transparent; border: none; color: white; font-weight: 700; width: 35px; text-align: right; font-size: 11px; border-bottom: 1px solid rgba(255,255,255,0.3); padding: 0; }
 
         /* TABS */
         .tabs-pill { display: flex; background: #E2E8F0; padding: 4px; border-radius: 12px; margin: 0 15px; }
@@ -121,11 +122,14 @@
         .chip.active { background: var(--primary); color: white; border-color: var(--primary); box-shadow: 0 4px 10px rgba(15, 23, 42, 0.2); }
 
         .btn-main { width: 100%; padding: 18px; background: var(--primary); color: white; border: none; border-radius: 16px; font-weight: 800; font-size: 15px; margin-top: 10px; box-shadow: 0 10px 20px -5px rgba(15, 23, 42, 0.3); }
+        .btn-sec { width: 100%; padding: 15px; background: white; border: 1px solid var(--border); border-radius: 12px; font-weight: 700; font-size: 12px; color: var(--txt); margin-bottom: 10px; display: flex; align-items: center; justify-content: center; gap: 8px; }
         
         .loader { position:fixed; inset:0; background:rgba(255,255,255,0.8); z-index:200; display:none; align-items:center; justify-content:center; backdrop-filter: blur(5px); }
         
-        /* Charts */
+        /* Charts & Admin */
         .chart-box { background: white; padding: 20px; border-radius: 20px; border: 1px solid var(--border); margin-bottom: 20px; }
+        .admin-section { border-top: 1px dashed var(--border); padding-top: 20px; margin-top: 20px; }
+        .admin-title { font-size: 11px; font-weight: 800; color: var(--txt-sec); text-transform: uppercase; margin-bottom: 15px; letter-spacing: 0.5px; }
     </style>
 </head>
 <body>
@@ -146,9 +150,15 @@
         <div class="kpi-hero">
             <div class="hero-top">
                 <span class="hero-lbl">Balance Total</span>
-                <div class="tc-widget">
-                    <span>USD</span>
-                    <input type="number" id="usdRate" value="1200" class="tc-inp" onchange="loadData()">
+                <div class="rates-row">
+                    <div class="tc-widget">
+                        <span>USD</span>
+                        <input type="number" id="usdRate" value="1200" class="tc-inp" onchange="saveRates()">
+                    </div>
+                    <div class="tc-widget">
+                        <span>COP</span>
+                        <input type="number" id="copRate" value="3700" class="tc-inp" onchange="saveRates()">
+                    </div>
                 </div>
             </div>
             <div class="hero-bal" id="kpiBal">$0</div>
@@ -198,7 +208,22 @@
         <div style="height:200px;"><canvas id="chartInc"></canvas></div>
     </div>
     
-    <button class="btn-main" style="background:#334155" onclick="forceSync()"><i class="fas fa-cloud-download-alt"></i> Forzar Sincronización</button>
+    <div class="admin-section">
+        <div class="admin-title"><i class="fas fa-toolbox"></i> Herramientas Avanzadas</div>
+        
+        <button class="btn-sec" onclick="executeRecurrentes()">
+            <i class="fas fa-sync-alt" style="color:var(--primary)"></i> Ejecutar Recurrentes
+        </button>
+        <button class="btn-sec" onclick="cloneMonth()">
+            <i class="fas fa-copy" style="color:var(--accent)"></i> Copiar del Mes Anterior
+        </button>
+        <button class="btn-sec" onclick="clearMonth()" style="border-color:#FECACA; color:#EF4444;">
+            <i class="fas fa-trash"></i> Borrar Todo este Mes
+        </button>
+        <button class="btn-main" style="background:#334155; margin-top:15px;" onclick="forceSync()">
+            <i class="fas fa-cloud-download-alt"></i> Sincronizar Nube
+        </button>
+    </div>
 </div>
 
 <div class="bottom-nav">
@@ -217,6 +242,7 @@
                 <select id="fCurr" class="curr-sel">
                     <option value="ARS">ARS</option>
                     <option value="USD">USD</option>
+                    <option value="COP">COP</option>
                 </select>
             </div>
 
@@ -275,7 +301,8 @@
     let data = { 
         txs: [], 
         cats: { exp:['Esenciales','Deudas','Comida','Salidas','Varios'], inc:['Sueldo','Ventas','Otros'] }, 
-        concepts: {} 
+        concepts: {},
+        recurrentes: [] 
     };
     let currentTxs = [], editId = null, cExp = null, cInc = null;
     let tempCat='', tempLink='';
@@ -286,7 +313,8 @@
     window.onload = () => {
         updateDateUI();
         if(localStorage.getItem('usdRate')) document.getElementById('usdRate').value = localStorage.getItem('usdRate');
-        forceSync(); // Load from cloud on start
+        if(localStorage.getItem('copRate')) document.getElementById('copRate').value = localStorage.getItem('copRate');
+        forceSync(); 
     };
 
     // --- CORE LOGIC ---
@@ -298,6 +326,11 @@
         currentDate.setMonth(currentDate.getMonth() + d); 
         updateDateUI(); 
     }
+    function saveRates() {
+        localStorage.setItem('usdRate', document.getElementById('usdRate').value);
+        localStorage.setItem('copRate', document.getElementById('copRate').value);
+        loadData();
+    }
 
     function loadData() {
         const y = currentDate.getFullYear(), m = currentDate.getMonth() + 1;
@@ -305,11 +338,17 @@
         currentTxs = (data.txs || []).filter(t => !t.deletedAt && parseInt(t.date.split('-')[0]) === y && parseInt(t.date.split('-')[1]) === m);
         
         // Recalcular montos dinámicos
-        const rate = parseFloat(document.getElementById('usdRate').value) || 1200;
+        const rateUSD = parseFloat(document.getElementById('usdRate').value) || 1200;
+        const rateCOP = parseFloat(document.getElementById('copRate').value) || 3700;
+        
         currentTxs.forEach(t => {
-            // Si NO está ejecutado (congelado) y es USD, recalcular
-            if(!t.exec && t.curr === 'USD') {
-                t.amount = t.origAmt * rate;
+            // Si NO está ejecutado (congelado) y es moneda extranjera, recalcular
+            if(!t.exec) {
+                if(t.curr === 'USD') t.amount = t.origAmt * rateUSD;
+                if(t.curr === 'COP') t.amount = (t.origAmt / rateCOP) * rateUSD; // COP -> USD -> ARS (aprox) o COP -> ARS directo? Usamos lógica: (Monto / TasaCOP) * TasaARS si queremos paridad, o simplificado.
+                // AJUSTE: Si TasaCOP es cuantos COP son 1 USD, y TasaARS es cuantos ARS son 1 USD.
+                // Entonces 1 COP = TasaARS / TasaCOP pesos argentinos.
+                if(t.curr === 'COP') t.amount = t.origAmt * (rateUSD / rateCOP);
             }
         });
 
@@ -344,7 +383,9 @@
             
             // Icono de link
             let linkIcon = (t.linkId && !isInc) ? '<i class="fas fa-link" style="font-size:10px; color:var(--accent)"></i>' : '';
-            let currencyTag = t.curr === 'USD' ? `<span style="background:#FEF3C7; color:#D97706; padding:1px 4px; border-radius:4px; font-weight:800; font-size:9px;">U$D ${t.origAmt}</span>` : '';
+            let currencyTag = '';
+            if(t.curr === 'USD') currencyTag = `<span style="background:#FEF3C7; color:#D97706; padding:1px 4px; border-radius:4px; font-weight:800; font-size:9px;">U$D ${t.origAmt}</span>`;
+            if(t.curr === 'COP') currencyTag = `<span style="background:#DBEAFE; color:#1E40AF; padding:1px 4px; border-radius:4px; font-weight:800; font-size:9px;">COP ${fmt(t.origAmt)}</span>`;
 
             el.innerHTML = `
                 <div class="tx-top">
@@ -399,6 +440,57 @@
         }
     }
 
+    // --- ADMIN TOOLS (NUEVAS FUNCIONES) ---
+    function executeRecurrentes() {
+        const y=currentDate.getFullYear(), m=currentDate.getMonth()+1; 
+        let c=0; 
+        if(!data.recurrentes || data.recurrentes.length === 0) return alert('No hay recurrentes configurados (hazlo desde PC)');
+        
+        data.recurrentes.forEach(r=>{ 
+            if(!data.txs.some(t=>!t.deletedAt && t.desc==r.desc && parseInt(t.date.split('-')[0])==y && parseInt(t.date.split('-')[1])==m)){ 
+                data.txs.push({...r, id:Date.now()+Math.random(), date:`${y}-${m.toString().padStart(2,'0')}-01`, exec:false, linkId:null, deletedAt:null, origAmt:r.amount, curr:'ARS'}); 
+                c++; 
+            }
+        }); 
+        if(c>0){ saveData(); alert('Generados: '+c); } else alert('Ya estaban cargados');
+    }
+
+    function cloneMonth() {
+        if(!confirm('¿Copiar mes ANTERIOR al actual?')) return;
+        const prevDate = new Date(currentDate);
+        prevDate.setMonth(prevDate.getMonth() - 1);
+        const py = prevDate.getFullYear(), pm = prevDate.getMonth() + 1;
+        
+        const src = data.txs.filter(t=>!t.deletedAt && parseInt(t.date.split('-')[0])==py && parseInt(t.date.split('-')[1])==pm);
+        const tgt = `${currentDate.getFullYear()}-${(currentDate.getMonth()+1).toString().padStart(2,'0')}-01`;
+        
+        if(src.length === 0) return alert('El mes anterior está vacío');
+
+        let map={}, n=[]; 
+        src.filter(t=>t.type=='inc').forEach(t=>{const id=Date.now()+Math.random(); map[t.id]=id; n.push({...t,id,date:tgt,exec:false});}); 
+        src.filter(t=>t.type=='exp').forEach(t=>{const id=Date.now()+Math.random(); n.push({...t,id,date:tgt,exec:false,linkId:t.linkId?map[t.linkId]:null});}); 
+        
+        data.txs.push(...n); 
+        saveData();
+        alert(`Se copiaron ${n.length} registros`);
+    }
+
+    function clearMonth() {
+        if(confirm('¿BORRAR todo este mes? Esta acción no se puede deshacer.')) {
+            const y = currentDate.getFullYear(), m = currentDate.getMonth() + 1;
+            let count = 0;
+            data.txs.forEach(t=>{
+                if(parseInt(t.date.split('-')[0])==y && parseInt(t.date.split('-')[1])==m) {
+                    t.deletedAt=Date.now();
+                    count++;
+                }
+            });
+            saveData();
+            alert(`Se eliminaron ${count} registros`);
+        }
+    }
+
+
     // --- FORM & ACTIONS ---
     function openNewTx() { editId=null; resetForm(); openSheet(); }
     function openSheet() { document.getElementById('sheet').classList.add('open'); }
@@ -412,7 +504,6 @@
         const now = new Date();
         const y = currentDate.getFullYear();
         const m = (currentDate.getMonth()+1).toString().padStart(2,'0');
-        // Si estamos en el mes actual, usar dia de hoy, sino dia 1
         const d = (y===now.getFullYear() && (currentDate.getMonth())===now.getMonth()) ? now.getDate().toString().padStart(2,'0') : '01';
         document.getElementById('fDate').value = `${y}-${m}-${d}`;
         
@@ -444,12 +535,11 @@
         const add = document.createElement('div'); add.className='chip'; add.innerHTML='<i class="fas fa-plus"></i>';
         add.onclick = () => {
             const n = prompt('Nueva Categoría:');
-            if(n) { data.cats[type].push(n); data.concepts[n]=[]; saveData(); renderCatChips(type); }
+            if(n) { if(!data.cats[type]) data.cats[type]=[]; data.cats[type].push(n); data.concepts[n]=[]; saveData(); renderCatChips(type); }
         };
         div.appendChild(add);
         
-        // Si ya había cat seleccionada, mostrar conceptos
-        if(tempCat && data.cats[type].includes(tempCat)) renderConChips(tempCat);
+        if(tempCat && (data.cats[type]||[]).includes(tempCat)) renderConChips(tempCat);
         else document.getElementById('conChips').innerHTML = '';
     }
 
@@ -495,8 +585,9 @@
     document.getElementById('txForm').onsubmit = (e) => {
         e.preventDefault();
         
-        // Concept Handling
         let cat = document.getElementById('fCat').value;
+        if(!cat) return alert('Selecciona categoría');
+        
         let desc = document.getElementById('fConcept').value;
         if(desc === 'new' || !desc) {
             desc = document.getElementById('fCustomDesc').value;
@@ -504,19 +595,21 @@
         }
 
         // Amount & Conversion Logic
-        const rate = parseFloat(document.getElementById('usdRate').value) || 1200;
+        const rateUSD = parseFloat(document.getElementById('usdRate').value) || 1200;
+        const rateCOP = parseFloat(document.getElementById('copRate').value) || 3700;
         const origAmt = parseFloat(document.getElementById('fAmount').value);
         const curr = document.getElementById('fCurr').value;
         
         // Calcular monto en ARS
         let amount = origAmt;
-        if(curr === 'USD') amount = origAmt * rate;
+        if(curr === 'USD') amount = origAmt * rateUSD;
+        if(curr === 'COP') amount = origAmt * (rateUSD / rateCOP);
 
         const tx = {
             id: editId || Date.now(),
             date: document.getElementById('fDate').value,
-            amount: amount, // Se guarda en ARS
-            origAmt: origAmt, // Se guarda original
+            amount: amount, 
+            origAmt: origAmt, 
             curr: curr,
             type: document.getElementById('fType').value,
             cat: cat,
@@ -541,8 +634,6 @@
         const t = data.txs.find(x => x.id == id);
         if(!t) return;
 
-        // Cargar valores
-        // Mostramos el monto original (si era USD, mostramos los USD)
         document.getElementById('fAmount').value = t.origAmt || t.amount;
         document.getElementById('fCurr').value = t.curr || 'ARS';
         document.getElementById('fDate').value = t.date;
@@ -553,7 +644,6 @@
         tempCat = t.cat; document.getElementById('fCat').value = t.cat; renderCatChips(t.type);
         
         document.getElementById('fConcept').value = t.desc; renderConChips(t.cat);
-        // Si no esta en chips, activar input custom
         if(!data.concepts[t.cat]?.includes(t.desc)) {
              document.getElementById('fConcept').value = 'new';
              document.getElementById('fCustomDesc').style.display='block';
@@ -579,9 +669,12 @@
         try {
             const r = await fetch(API_URL);
             const cloudData = await r.json();
-            if(cloudData.txs) {
-                data = cloudData;
-                loadData();
+            if(cloudData) {
+                data.txs = cloudData.txs || [];
+                data.cats = cloudData.cats || data.cats;
+                data.concepts = cloudData.concepts || data.concepts;
+                data.recurrentes = cloudData.recurrentes || [];
+                saveRates(); // saves to local and triggers loadData
                 document.getElementById('syncDot').style.background = '#10B981';
             }
         } catch(e) { console.error(e); }
@@ -591,7 +684,8 @@
     async function saveData() {
         document.getElementById('syncDot').style.background = '#F59E0B';
         localStorage.setItem('usdRate', document.getElementById('usdRate').value);
-        loadData(); // Optimistic update
+        localStorage.setItem('copRate', document.getElementById('copRate').value);
+        loadData(); 
         try {
             await fetch(API_URL, {method:'POST', body:JSON.stringify(data)});
             document.getElementById('syncDot').style.background = '#10B981';
