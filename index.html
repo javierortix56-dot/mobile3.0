@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#ffffff">
-    <title>J&M Finance Mobile Pro</title>
+    <title>FinanceFlow Mobile V2</title>
     
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -24,117 +24,112 @@
             --inc: #10B981; 
             --exp: #EF4444; 
             --border: #E2E8F0; 
-            --glass: rgba(255, 255, 255, 0.90);
+            --glass: rgba(255, 255, 255, 0.95);
         }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
-        body { font-family: 'Manrope', sans-serif; background: var(--bg); margin: 0; color: var(--txt); padding-top: 60px; padding-bottom: 90px; height: 100vh; overflow: hidden; user-select: none; }
+        body { font-family: 'Manrope', sans-serif; background: var(--bg); margin: 0; color: var(--txt); height: 100vh; overflow: hidden; user-select: none; display: flex; flex-direction: column; }
 
-        /* HEADER GLASS */
-        .header { position: fixed; top: 0; left: 0; right: 0; height: 60px; background: var(--glass); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(0,0,0,0.05); z-index: 50; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); }
-        .brand { font-weight: 800; font-size: 18px; letter-spacing: -0.5px; display:flex; gap:8px; align-items:center; color: var(--primary); }
+        /* HEADER */
+        .header { height: 50px; background: var(--glass); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(0,0,0,0.05); display: flex; align-items: center; justify-content: space-between; padding: 0 15px; flex-shrink: 0; z-index: 50; }
+        .brand { font-weight: 800; font-size: 16px; letter-spacing: -0.5px; display:flex; gap:8px; align-items:center; color: var(--primary); }
         .sync-dot { width:8px; height:8px; border-radius:50%; background:#CBD5E1; transition:0.3s; box-shadow: 0 0 0 2px white; }
         
-        .date-pill { background: rgba(0,0,0,0.03); border-radius: 99px; padding: 4px 12px; display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 13px; border: 1px solid rgba(0,0,0,0.05); cursor: pointer; transition: 0.2s; }
-        .date-pill:active { background: rgba(0,0,0,0.08); transform: scale(0.98); }
-        .btn-arrow { background: none; border: none; font-size: 14px; color: var(--txt); cursor: pointer; padding: 4px; display:flex; align-items:center; height:100%; z-index: 2; opacity: 0.6; }
-        .date-txt { position: relative; min-width: 80px; text-align: center; text-transform: uppercase; letter-spacing: 0.5px; font-size: 12px; }
-
-        /* VIEWS & LAYOUT */
-        .view-section { display: none; height: 100%; overflow-y: auto; padding-bottom: 80px; scroll-behavior: smooth; } 
-        .view-section.active { display: block; animation: fadeIn 0.3s ease; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* KPI CARD HERO */
-        .dash-container { padding: 15px; display: flex; flex-direction: column; gap: 15px; }
-        .kpi-hero { background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%); padding: 20px; border-radius: 20px; color: white; box-shadow: 0 10px 30px -10px rgba(15, 23, 42, 0.4); position: relative; overflow: hidden; }
-        .kpi-hero::after { content:''; position: absolute; top: -50px; right: -50px; width: 150px; height: 150px; background: rgba(255,255,255,0.05); border-radius: 50%; pointer-events: none; }
-        .hero-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; }
-        .hero-lbl { font-size: 11px; font-weight: 700; opacity: 0.6; text-transform: uppercase; letter-spacing: 1px; }
-        .hero-bal { font-size: 36px; font-weight: 800; letter-spacing: -1px; line-height: 1; margin-bottom: 5px; }
+        .date-pill { background: rgba(0,0,0,0.03); border-radius: 99px; padding: 2px 8px; display: flex; align-items: center; gap: 4px; font-weight: 700; font-size: 12px; border: 1px solid rgba(0,0,0,0.05); }
+        .btn-arrow { background: none; border: none; font-size: 12px; color: var(--txt); cursor: pointer; padding: 4px; opacity: 0.6; }
         
-        .hero-stats { display: flex; gap: 15px; margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); }
-        .stat-item { flex: 1; }
-        .stat-lbl { font-size: 10px; opacity: 0.6; margin-bottom: 2px; font-weight: 600; }
-        .stat-val { font-size: 15px; font-weight: 700; }
-        .inc-col { color: #34D399; } .exp-col { color: #F87171; }
+        /* LAYOUT PRINCIPAL */
+        .main-container { flex: 1; position: relative; overflow: hidden; display: flex; flex-direction: column; }
+        .view-section { display: none; height: 100%; flex-direction: column; } 
+        .view-section.active { display: flex; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
+        /* KPI HERO REDUCIDO */
+        .dash-content { padding: 10px 15px; display: flex; flex-direction: column; height: 100%; }
+        .kpi-hero { background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%); padding: 15px; border-radius: 16px; color: white; box-shadow: 0 4px 15px rgba(15, 23, 42, 0.3); flex-shrink: 0; margin-bottom: 10px; }
+        .hero-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+        .hero-bal { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; line-height: 1; }
+        .hero-usd { font-size: 12px; opacity: 0.7; font-weight: 600; margin-left: 8px; }
+        
         .rates-row { display: flex; gap: 5px; }
-        .tc-widget { background: rgba(0,0,0,0.2); padding: 4px 8px; border-radius: 8px; font-size: 10px; display: flex; align-items: center; gap: 5px; border: 1px solid rgba(255,255,255,0.1); }
-        .tc-inp { background: transparent; border: none; color: white; font-weight: 700; width: 35px; text-align: right; font-size: 11px; border-bottom: 1px solid rgba(255,255,255,0.3); padding: 0; }
+        .tc-widget { background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 6px; font-size: 9px; display: flex; align-items: center; gap: 4px; }
+        .tc-inp { background: transparent; border: none; color: white; font-weight: 700; width: 30px; text-align: right; font-size: 10px; border-bottom: 1px solid rgba(255,255,255,0.3); padding: 0; }
+
+        .hero-stats { display: flex; gap: 10px; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.1); }
+        .stat-item { flex: 1; display:flex; justify-content: space-between; align-items: center; }
+        .stat-lbl { font-size: 9px; opacity: 0.6; font-weight: 600; }
+        .stat-val { font-size: 12px; font-weight: 700; }
 
         /* TABS */
-        .tabs-pill { display: flex; background: #E2E8F0; padding: 4px; border-radius: 12px; margin: 0 15px; }
-        .tab-btn { flex: 1; text-align: center; padding: 8px; border-radius: 9px; font-size: 12px; font-weight: 700; color: var(--txt-sec); cursor: pointer; transition: 0.2s; }
-        .tab-btn.active { background: white; color: var(--primary); box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .tabs-pill { display: flex; background: #E2E8F0; padding: 3px; border-radius: 10px; margin-bottom: 10px; flex-shrink: 0; }
+        .tab-btn { flex: 1; text-align: center; padding: 6px; border-radius: 8px; font-size: 11px; font-weight: 700; color: var(--txt-sec); cursor: pointer; transition: 0.2s; }
+        .tab-btn.active { background: white; color: var(--primary); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
 
-        /* T-ACCOUNTS */
-        .t-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 15px; height: calc(100% - 280px); }
-        .t-col { display: flex; flex-direction: column; background: var(--surface); border-radius: 16px; border: 1px solid var(--border); overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
-        .col-head { padding: 8px 10px; text-align: center; font-size: 10px; font-weight: 900; color: white; text-transform: uppercase; letter-spacing: 0.5px; display: flex; justify-content: space-between; align-items: center; }
+        /* LISTAS CON SCROLL INDEPENDIENTE */
+        .grid-lists { display: flex; gap: 10px; flex: 1; min-height: 0; }
+        .list-col { flex: 1; background: var(--surface); border-radius: 12px; border: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
+        .col-head { padding: 8px; text-align: center; font-size: 10px; font-weight: 800; color: white; text-transform: uppercase; letter-spacing: 0.5px; flex-shrink: 0; display: flex; justify-content: space-between; align-items: center; }
         .bg-inc { background: var(--inc); justify-content: center; } 
         .bg-exp { background: var(--exp); }
-        
-        /* BUSCADOR ESTILO */
-        .search-mini { border:none; background:rgba(255,255,255,0.2); border-radius:6px; color:white; font-size:10px; width:70px; padding:3px 6px; outline:none; font-weight:600; }
-        .search-mini::placeholder { color:rgba(255,255,255,0.7); }
+        .list-scroll { flex: 1; overflow-y: auto; padding: 0; -webkit-overflow-scrolling: touch; }
 
-        .t-list { overflow-y: auto; flex: 1; padding: 5px; }
-        .tx-card { background: white; padding: 10px; border-bottom: 1px solid #F1F5F9; transition: 0.1s; cursor: pointer; }
-        .tx-card:last-child { border-bottom: none; }
-        .tx-card:active { background: #F8FAFC; }
-        .tx-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px; }
-        .tx-desc { font-weight: 700; font-size: 12px; line-height: 1.3; color: var(--txt); max-width: 70%; }
-        .tx-amt { font-weight: 800; font-size: 12px; white-space: nowrap; }
-        .tx-sub { display: flex; justify-content: space-between; align-items: center; font-size: 10px; color: var(--txt-sec); }
-        .cat-tag { background: #F1F5F9; padding: 2px 6px; border-radius: 4px; font-weight: 600; }
-        
-        .executed { opacity: 0.6; }
-        .executed .tx-desc { text-decoration: line-through; color: var(--txt-sec); }
-        
+        .tx-card { background: white; padding: 8px 10px; border-bottom: 1px solid #F1F5F9; cursor: pointer; }
+        .tx-top { display: flex; justify-content: space-between; margin-bottom: 2px; }
+        .tx-desc { font-weight: 700; font-size: 11px; color: var(--txt); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 90px; }
+        .tx-amt { font-weight: 800; font-size: 11px; }
+        .tx-sub { display: flex; justify-content: space-between; font-size: 9px; color: var(--txt-sec); }
+        .cat-tag { background: #F1F5F9; padding: 1px 4px; border-radius: 3px; }
+        .executed { opacity: 0.5; text-decoration: line-through; }
+
         /* ALLOCATION VIEW */
-        .alloc-list { padding: 15px; }
-        .alloc-card { background: white; border-radius: 16px; border: 1px solid var(--border); overflow: hidden; margin-bottom: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
-        .alloc-head { padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; background: #F8FAFC; border-bottom: 1px solid var(--border); }
+        .alloc-container { flex: 1; overflow-y: auto; padding-bottom: 20px; }
+        .alloc-card { background: white; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 10px; overflow: hidden; }
+        .alloc-head { padding: 10px; display: flex; justify-content: space-between; align-items: center; background: #F8FAFC; border-bottom: 1px solid var(--border); cursor: pointer; }
         .alloc-prog { height: 4px; width: 100%; background: #E2E8F0; }
-        .alloc-fill { height: 100%; background: var(--accent); transition: width 0.5s ease; }
+        .alloc-fill { height: 100%; background: var(--accent); }
+        .alloc-children { background: white; display: none; padding: 5px 0; border-top: 1px dashed var(--border); }
+        .child-row { padding: 6px 10px; display: flex; justify-content: space-between; font-size: 10px; color: var(--txt-sec); border-bottom: 1px solid #f8fafc; }
+
+        /* CHARTS & LEGENDS (Estilo PC adaptado) */
+        .chart-card { background: white; border: 1px solid var(--border); border-radius: 16px; padding: 15px; margin-bottom: 15px; display: flex; flex-direction: column; }
+        .chart-header { font-size: 12px; font-weight: 800; text-transform: uppercase; color: var(--txt-sec); margin-bottom: 10px; display: flex; justify-content: space-between; }
+        .chart-body { display: flex; align-items: center; gap: 15px; height: 160px; }
+        .donut-container { width: 140px; height: 140px; flex-shrink: 0; position: relative; }
+        .legend-container { flex: 1; height: 100%; overflow-y: auto; padding-right: 5px; }
+        
+        .legend-item { display: flex; align-items: center; justify-content: space-between; font-size: 10px; padding: 6px 0; border-bottom: 1px dashed #F1F5F9; cursor: pointer; }
+        .legend-dot { width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; flex-shrink: 0; }
+        .legend-name { color: var(--txt); font-weight: 600; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-right: 5px; }
+        .legend-val { font-weight: 700; color: var(--txt); }
+        .legend-pct { color: var(--txt-sec); font-size: 9px; margin-right: 4px; }
+
+        /* ADMIN TREE (Categorias) */
+        .tree-node { margin-bottom: 8px; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: white; }
+        .tree-head { padding: 8px 10px; background: #F8FAFC; display: flex; justify-content: space-between; align-items: center; font-size: 11px; font-weight: 700; cursor: pointer; }
+        .tree-body { padding: 8px; display: none; flex-wrap: wrap; gap: 6px; border-top: 1px solid var(--border); }
+        .concept-tag { font-size: 10px; padding: 3px 8px; background: #F1F5F9; border-radius: 4px; border: 1px solid transparent; display: flex; align-items: center; gap: 4px; }
+        .del-btn { color: #CBD5E1; font-size: 10px; padding: 2px; } .del-btn:active { color: #EF4444; }
 
         /* NAV BOTTOM */
-        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; height: 80px; background: var(--glass); backdrop-filter: blur(15px); border-top: 1px solid rgba(0,0,0,0.05); display: flex; justify-content: space-around; align-items: center; z-index: 40; padding-bottom: 20px; }
-        .nav-btn { font-size: 20px; color: #CBD5E1; background: none; border: none; padding: 10px; cursor: pointer; transition: 0.2s; display: flex; flex-direction: column; align-items: center; gap: 4px; }
-        .nav-btn span { font-size: 9px; font-weight: 700; }
-        .nav-btn.active { color: var(--primary); transform: translateY(-2px); }
-        .fab { width: 56px; height: 56px; background: var(--primary); border-radius: 20px; color: white; display: flex; align-items: center; justify-content: center; font-size: 22px; box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.4); transform: translateY(-25px); border: 4px solid var(--bg); cursor: pointer; transition: 0.2s; }
-        .fab:active { transform: translateY(-22px) scale(0.95); }
+        .bottom-nav { height: 60px; background: var(--glass); border-top: 1px solid rgba(0,0,0,0.05); display: flex; justify-content: space-around; align-items: center; flex-shrink: 0; padding-bottom: 10px; }
+        .nav-btn { font-size: 18px; color: #CBD5E1; background: none; border: none; padding: 8px; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+        .nav-btn span { font-size: 8px; font-weight: 700; }
+        .nav-btn.active { color: var(--primary); }
+        .fab { width: 48px; height: 48px; background: var(--primary); border-radius: 16px; color: white; display: flex; align-items: center; justify-content: center; font-size: 20px; transform: translateY(-15px); border: 4px solid var(--bg); box-shadow: 0 8px 20px rgba(15,23,42,0.3); }
 
         /* SHEET MODAL */
-        .sheet { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; opacity: 0; pointer-events: none; transition: 0.3s; display: flex; align-items: flex-end; backdrop-filter: blur(2px); }
+        .sheet { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; opacity: 0; pointer-events: none; transition: 0.2s; display: flex; align-items: flex-end; backdrop-filter: blur(2px); }
         .sheet.open { opacity: 1; pointer-events: auto; }
-        .sheet-box { background: var(--surface); width: 100%; border-radius: 24px 24px 0 0; padding: 25px; box-shadow: 0 -10px 40px rgba(0,0,0,0.1); transform: translateY(100%); transition: 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); max-height: 90vh; overflow-y: auto; }
+        .sheet-box { background: var(--surface); width: 100%; border-radius: 20px 20px 0 0; padding: 20px; max-height: 85vh; overflow-y: auto; transform: translateY(100%); transition: 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         .sheet.open .sheet-box { transform: translateY(0); }
-        
-        .sheet-drag { width: 40px; height: 5px; background: #E2E8F0; border-radius: 10px; margin: 0 auto 20px auto; }
-        
-        /* FORM INPUTS */
-        .inp-group { margin-bottom: 20px; }
-        .inp-lbl { font-size: 11px; font-weight: 800; color: var(--txt-sec); text-transform: uppercase; margin-bottom: 8px; display: block; letter-spacing: 0.5px; }
-        
-        .amount-row { display: flex; gap: 10px; margin-bottom: 20px; }
-        .big-inp { flex: 1; border: none; background: #F1F5F9; border-radius: 12px; font-size: 24px; font-weight: 800; padding: 15px; color: var(--txt); text-align: right; }
-        .curr-sel { width: 80px; border: none; background: #E2E8F0; border-radius: 12px; font-weight: 800; text-align: center; color: var(--txt); font-size: 14px; }
+        .sheet-drag { width: 40px; height: 4px; background: #E2E8F0; border-radius: 10px; margin: 0 auto 15px auto; }
 
-        .chip-container { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 5px; scrollbar-width: none; }
-        .chip { padding: 8px 14px; border-radius: 10px; background: white; border: 1px solid var(--border); color: var(--txt-sec); font-weight: 600; font-size: 12px; white-space: nowrap; cursor: pointer; transition: 0.2s; }
-        .chip.active { background: var(--primary); color: white; border-color: var(--primary); box-shadow: 0 4px 10px rgba(15, 23, 42, 0.2); }
-
-        .btn-main { width: 100%; padding: 18px; background: var(--primary); color: white; border: none; border-radius: 16px; font-weight: 800; font-size: 15px; margin-top: 10px; box-shadow: 0 10px 20px -5px rgba(15, 23, 42, 0.3); }
-        .btn-sec { width: 100%; padding: 15px; background: white; border: 1px solid var(--border); border-radius: 12px; font-weight: 700; font-size: 12px; color: var(--txt); margin-bottom: 10px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        /* COMPONENTES FORM */
+        .big-inp { width: 100%; border: none; background: #F1F5F9; border-radius: 12px; font-size: 24px; font-weight: 800; padding: 15px; color: var(--txt); text-align: right; margin-bottom: 10px; }
+        .chip-container { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 5px; margin-bottom: 15px; scrollbar-width: none; }
+        .chip { padding: 6px 12px; border-radius: 8px; background: white; border: 1px solid var(--border); color: var(--txt-sec); font-weight: 600; font-size: 11px; white-space: nowrap; transition: 0.1s; }
+        .chip.active { background: var(--primary); color: white; border-color: var(--primary); }
         
-        .loader { position:fixed; inset:0; background:rgba(255,255,255,0.8); z-index:200; display:none; align-items:center; justify-content:center; backdrop-filter: blur(5px); }
-        
-        /* Charts & Admin */
-        .chart-box { background: white; padding: 20px; border-radius: 20px; border: 1px solid var(--border); margin-bottom: 20px; }
-        .admin-section { border-top: 1px dashed var(--border); padding-top: 20px; margin-top: 20px; }
-        .admin-title { font-size: 11px; font-weight: 800; color: var(--txt-sec); text-transform: uppercase; margin-bottom: 15px; letter-spacing: 0.5px; }
+        .loader { position:fixed; inset:0; background:rgba(255,255,255,0.8); z-index:200; display:none; align-items:center; justify-content:center; }
     </style>
 </head>
 <body>
@@ -142,111 +137,100 @@
 <div id="loader" class="loader"><i class="fas fa-circle-notch fa-spin fa-2x" style="color:var(--primary)"></i></div>
 
 <div class="header">
-    <div class="brand">J&M <div id="syncDot" class="sync-dot"></div></div>
-    <div class="date-pill" onclick="changeMonth(0)"> <button class="btn-arrow" onclick="event.stopPropagation(); changeMonth(-1)"><i class="fas fa-chevron-left"></i></button>
+    <div class="brand">Flow <div id="syncDot" class="sync-dot"></div></div>
+    <div class="date-pill" onclick="changeMonth(0)"> 
+        <button class="btn-arrow" onclick="event.stopPropagation(); changeMonth(-1)"><i class="fas fa-chevron-left"></i></button>
         <div class="date-txt" id="monthTxt">...</div>
         <button class="btn-arrow" onclick="event.stopPropagation(); changeMonth(1)"><i class="fas fa-chevron-right"></i></button>
     </div>
-    <div style="width:24px;"></div>
+    <div style="width:20px;"></div>
 </div>
 
-<div id="view-home" class="view-section active">
-    <div class="dash-container">
-        <div class="kpi-hero">
-            <div class="hero-top">
-                <span class="hero-lbl">Balance Total</span>
-                <div class="rates-row">
-                    <div class="tc-widget">
-                        <span>USD</span>
-                        <input type="number" id="usdRate" value="1200" class="tc-inp" onchange="saveRates()">
+<div class="main-container">
+
+    <div id="view-home" class="view-section active">
+        <div class="dash-content">
+            <div class="kpi-hero">
+                <div class="hero-top">
+                    <div style="display:flex; align-items:baseline;">
+                        <span class="hero-bal" id="kpiBal">$0</span>
+                        <span class="hero-usd">USD <span id="kpiUsd">0</span></span>
                     </div>
-                    <div class="tc-widget">
-                        <span>COP</span>
-                        <input type="number" id="copRate" value="3700" class="tc-inp" onchange="saveRates()">
+                    <div class="rates-row">
+                        <div class="tc-widget">USD <input type="number" id="usdRate" value="1200" class="tc-inp" onchange="saveRates()"></div>
+                        <div class="tc-widget">COP <input type="number" id="copRate" value="3700" class="tc-inp" onchange="saveRates()"></div>
                     </div>
                 </div>
-            </div>
-            <div class="hero-bal" id="kpiBal">$0</div>
-            <div style="font-size:13px; opacity:0.8; font-weight:600;">≈ USD <span id="kpiUsd">0</span></div>
-            
-            <div class="hero-stats">
-                <div class="stat-item">
-                    <div class="stat-lbl">INGRESOS</div>
-                    <div class="stat-val inc-col" id="sum-inc">$0</div>
-                </div>
-                <div class="stat-item" style="text-align:right;">
-                    <div class="stat-lbl">GASTOS</div>
-                    <div class="stat-val exp-col" id="sum-exp">$0</div>
+                <div class="hero-stats">
+                    <div class="stat-item"><span class="stat-lbl">INGRESOS</span><span class="stat-val" style="color:#34D399" id="sum-inc">$0</span></div>
+                    <div class="stat-item" style="justify-content:flex-end; gap:10px;"><span class="stat-lbl">GASTOS</span><span class="stat-val" style="color:#F87171" id="sum-exp">$0</span></div>
                 </div>
             </div>
-        </div>
 
-        <div class="tabs-pill">
-            <div class="tab-btn active" id="tab-txs" onclick="setSubTab('txs')">Movimientos</div>
-            <div class="tab-btn" id="tab-alloc" onclick="setSubTab('alloc')">Asignación</div>
-        </div>
-
-        <div id="sec-txs" class="t-grid">
-            <div class="t-col">
-                <div class="col-head bg-inc">Ingresos</div>
-                <div id="list-inc" class="t-list"></div>
+            <div class="tabs-pill">
+                <div class="tab-btn active" id="tab-txs" onclick="setSubTab('txs')">Movimientos</div>
+                <div class="tab-btn" id="tab-alloc" onclick="setSubTab('alloc')">Asignación</div>
             </div>
-            <div class="t-col">
-                <div class="col-head bg-exp">
-                    <span>Egresos</span>
-                    <input type="text" id="searchExp" placeholder="Buscar..." class="search-mini" oninput="filterExpList()">
+
+            <div id="sec-txs" class="grid-lists">
+                <div class="list-col">
+                    <div class="col-head bg-inc">Ingresos</div>
+                    <div id="list-inc" class="list-scroll"></div>
                 </div>
-                <div id="list-exp" class="t-list"></div>
+                <div class="list-col">
+                    <div class="col-head bg-exp">
+                        <span>Egresos</span>
+                        <i class="fas fa-search" style="opacity:0.6;" onclick="document.getElementById('searchBar').classList.toggle('hidden')"></i>
+                    </div>
+                    <input type="text" id="searchBar" placeholder="Buscar..." class="hidden" style="width:100%; border:none; padding:5px; font-size:10px; background:#FEF2F2;" oninput="filterExp()">
+                    <div id="list-exp" class="list-scroll"></div>
+                </div>
+            </div>
+
+            <div id="sec-alloc" style="display:none;" class="alloc-container">
+                <div id="alloc-list"></div>
             </div>
         </div>
-
-        <div id="sec-alloc" style="display:none;" class="alloc-list">
-            <div id="alloc-container"></div>
-        </div>
     </div>
-</div>
 
-<div id="view-stats" class="view-section" style="padding:20px;">
-    <div class="chart-box">
-        <h4 style="margin:0 0 15px 0; font-size:14px; text-transform:uppercase; color:var(--txt-sec);">Gastos por Categoría</h4>
-        <div style="height:200px;"><canvas id="chartExp"></canvas></div>
-    </div>
-    <div class="chart-box">
-        <h4 style="margin:0 0 15px 0; font-size:14px; text-transform:uppercase; color:var(--txt-sec);">Ingresos</h4>
-        <div style="height:200px;"><canvas id="chartInc"></canvas></div>
-    </div>
-    
-    <div class="admin-section">
-        <div class="admin-title" style="display:flex; justify-content:space-between; align-items:center;">
-            <span><i class="fas fa-redo"></i> Gastos Recurrentes</span>
-            <button onclick="addRecurrenteUI()" style="border:none; background:var(--primary); color:white; border-radius:50%; width:20px; height:20px; font-size:10px;">+</button>
-        </div>
-        <div id="list-recurrentes" style="background:#F1F5F9; border-radius:12px; padding:10px; margin-bottom:15px; max-height:150px; overflow-y:auto;"></div>
-        <button class="btn-sec" onclick="populateRecurringDefaults()" style="margin-bottom:10px; color:var(--accent); border-color:var(--accent);">
-            <i class="fas fa-magic"></i> Analizar y Sugerir (3M)
-        </button>
-
-        <div class="admin-title" style="margin-top:20px;"><i class="fas fa-tags"></i> Gestionar Categorías</div>
-        <div style="background:white; border:1px solid var(--border); border-radius:12px; padding:10px; margin-bottom:15px;">
-            <div style="font-size:10px; color:var(--txt-sec); margin-bottom:5px;">Click para eliminar</div>
-            <div id="admin-cat-list" style="display:flex; flex-wrap:wrap; gap:5px;"></div>
-        </div>
-
-        <div class="admin-title" style="margin-top:20px;"><i class="fas fa-toolbox"></i> Herramientas</div>
+    <div id="view-stats" class="view-section" style="padding:15px; overflow-y:auto;">
         
-        <button class="btn-sec" onclick="executeRecurrentes()">
-            <i class="fas fa-sync-alt" style="color:var(--primary)"></i> Ejecutar Recurrentes
-        </button>
-        <button class="btn-sec" onclick="cloneMonth()">
-            <i class="fas fa-copy" style="color:var(--accent)"></i> Copiar del Mes Anterior
-        </button>
-        <button class="btn-sec" onclick="clearMonth()" style="border-color:#FECACA; color:#EF4444;">
-            <i class="fas fa-trash"></i> Borrar Todo este Mes
-        </button>
-        <button class="btn-main" style="background:#334155; margin-top:15px;" onclick="forceSync()">
-            <i class="fas fa-cloud-download-alt"></i> Sincronizar Nube
-        </button>
+        <div class="chart-card">
+            <div class="chart-header">
+                <span>Gastos por Categoría</span>
+                <button onclick="resetCharts()" id="resetBtn" style="border:none; background:none; color:var(--accent); font-size:10px; display:none;">VOLVER</button>
+            </div>
+            <div class="chart-body">
+                <div class="donut-container"><canvas id="chartExp"></canvas></div>
+                <div class="legend-container" id="legExp"></div>
+            </div>
+        </div>
+
+        <div class="chart-card">
+            <div class="chart-header"><span>Ingresos</span></div>
+            <div class="chart-body">
+                <div class="donut-container"><canvas id="chartInc"></canvas></div>
+                <div class="legend-container" id="legInc"></div>
+            </div>
+        </div>
+
+        <div style="margin-top:20px; font-size:11px; font-weight:800; color:var(--txt-sec); margin-bottom:10px; display:flex; justify-content:space-between;">
+            <span>GASTOS RECURRENTES</span>
+            <span style="color:var(--accent)" onclick="addRecurrenteUI()">+ Agregar</span>
+        </div>
+        <div id="list-recurrentes" style="background:white; border-radius:12px; padding:10px; margin-bottom:10px; max-height:150px; overflow-y:auto; border:1px solid var(--border);"></div>
+        
+        <div style="margin-top:20px; font-size:11px; font-weight:800; color:var(--txt-sec); margin-bottom:10px;">GESTIÓN DE CATEGORÍAS</div>
+        <div id="admin-tree" style="margin-bottom:20px;"></div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+            <button onclick="executeRecurrentes()" style="padding:10px; background:white; border:1px solid var(--border); border-radius:10px; font-size:10px; font-weight:700;"><i class="fas fa-sync text-primary"></i> Ejecutar Recurrentes</button>
+            <button onclick="cloneMonth()" style="padding:10px; background:white; border:1px solid var(--border); border-radius:10px; font-size:10px; font-weight:700;"><i class="fas fa-copy text-accent"></i> Clonar Mes Anterior</button>
+            <button onclick="clearMonth()" style="grid-column:span 2; padding:10px; background:#FEF2F2; border:1px solid #FECACA; border-radius:10px; font-size:10px; font-weight:700; color:#EF4444;"><i class="fas fa-trash"></i> Borrar Todo el Mes</button>
+            <button onclick="forceSync()" style="grid-column:span 2; padding:12px; background:var(--primary); border-radius:10px; font-size:11px; font-weight:700; color:white;"><i class="fas fa-cloud-download-alt"></i> Sincronizar Nube</button>
+        </div>
     </div>
+
 </div>
 
 <div class="bottom-nav">
@@ -258,149 +242,118 @@
 <div class="sheet" id="sheet" onclick="if(event.target===this) closeSheet()">
     <div class="sheet-box">
         <div class="sheet-drag"></div>
-        
         <form id="txForm">
-            <div class="amount-row">
-                <input type="number" id="fAmount" class="big-inp" placeholder="0.00" step="0.01" required inputmode="decimal">
-                <select id="fCurr" class="curr-sel">
+            <div style="display:flex; gap:10px;">
+                <input type="number" id="fAmount" class="big-inp" placeholder="0" step="0.01" required>
+                <select id="fCurr" style="width:80px; margin-bottom:10px; background:#E2E8F0; border:none; border-radius:12px; font-weight:700; text-align:center;">
                     <option value="ARS">ARS</option>
                     <option value="USD">USD</option>
                     <option value="COP">COP</option>
                 </select>
             </div>
-
-            <div class="tabs-pill" style="margin: 0 0 20px 0;">
+            
+            <div class="tabs-pill" style="margin-bottom:15px;">
                 <div class="tab-btn active" id="seg-exp" onclick="setType('exp')">Gasto</div>
                 <div class="tab-btn" id="seg-inc" onclick="setType('inc')">Ingreso</div>
             </div>
             <input type="hidden" id="fType" value="exp">
 
-            <div class="inp-group">
-                <label class="inp-lbl">Categoría</label>
+            <div style="margin-bottom:15px;">
+                <label style="font-size:10px; font-weight:800; color:var(--txt-sec);">CATEGORÍA</label>
                 <div class="chip-container" id="catChips"></div>
                 <input type="hidden" id="fCat">
             </div>
 
-            <div class="inp-group">
-                <label class="inp-lbl">Concepto</label>
+            <div style="margin-bottom:15px;">
+                <label style="font-size:10px; font-weight:800; color:var(--txt-sec);">CONCEPTO</label>
                 <div class="chip-container" id="conChips"></div>
-                <input type="text" id="fCustomDesc" class="big-inp" style="width:100%; font-size:16px; text-align:left; display:none; margin-top:10px; background:white; border:1px solid var(--border);" placeholder="Escribe el nombre...">
+                <input type="text" id="fCustomDesc" class="big-inp" style="font-size:16px; text-align:left; display:none; background:white; border:1px solid var(--border);" placeholder="Nombre...">
                 <input type="hidden" id="fConcept">
             </div>
 
-            <div class="inp-group" id="linkSection">
-                <label class="inp-lbl" style="color:var(--accent)">Vincular a Ingreso (Opcional)</label>
+            <div id="linkSection" style="margin-bottom:15px;">
+                <label style="font-size:10px; font-weight:800; color:var(--accent);">VINCULAR A INGRESO</label>
                 <div class="chip-container" id="linkChips"></div>
                 <input type="hidden" id="fLink">
             </div>
 
-            <div class="inp-group" style="display:flex; gap:15px;">
+            <div style="display:flex; gap:10px; margin-bottom:15px;">
                 <div style="flex:1;">
-                    <label class="inp-lbl">Fecha</label>
-                    <input type="date" id="fDate" style="width:100%; padding:12px; border-radius:10px; border:1px solid var(--border); background:#F8FAFC; font-family:inherit;" required>
+                    <label style="font-size:10px; font-weight:800; color:var(--txt-sec);">FECHA</label>
+                    <input type="date" id="fDate" style="width:100%; padding:10px; border:1px solid var(--border); border-radius:10px; background:#F8FAFC;" required>
                 </div>
-                <div style="flex:1;">
-                    <label class="inp-lbl">Estado</label>
-                    <div style="display:flex; align-items:center; gap:10px; background:#F8FAFC; padding:10px; border-radius:10px; border:1px solid var(--border);">
-                        <input type="checkbox" id="fExec" checked style="width:20px; height:20px; accent-color:var(--primary);">
-                        <span style="font-size:12px; font-weight:700;">Congelar Tasa</span>
+                <div style="flex:1; display:flex; align-items:flex-end;">
+                    <div style="display:flex; align-items:center; gap:8px; padding:10px; background:#F8FAFC; border:1px solid var(--border); border-radius:10px; width:100%;">
+                        <input type="checkbox" id="fExec" checked> <span style="font-size:11px; font-weight:700;">Congelar Tasa</span>
                     </div>
                 </div>
             </div>
 
-            <button type="submit" class="btn-main">GUARDAR</button>
-            <button type="button" id="btnDel" onclick="delTx()" style="width:100%; padding:15px; color:#EF4444; background:none; border:none; font-weight:700; display:none;">Eliminar</button>
+            <button type="submit" style="width:100%; padding:15px; background:var(--primary); color:white; font-weight:800; border-radius:12px; border:none; margin-bottom:10px;">GUARDAR</button>
+            <button type="button" id="btnDel" onclick="delTx()" style="width:100%; color:#EF4444; background:none; border:none; font-weight:700; display:none;">Eliminar</button>
         </form>
     </div>
 </div>
 
 <script>
-    // --- CONFIGURACIÓN ---
     const API_URL = "https://script.google.com/macros/s/AKfycbxEni9GJ4gxmbhmNsbzoYxS_SfhcorqsXj4zh93-qWIy5i2R4jwvgJ8L25GcU3h3Bkh/exec";
-    
     const MONTHS = ["ENE","FEB","MAR","ABR","MAY","JUN","JUL","AGO","SEP","OCT","NOV","DIC"];
-    const COLORS = ['#3B82F6','#10B981','#F59E0B','#EF4444','#8B5CF6'];
+    const PALETTE = ['#3B82F6','#10B981','#F59E0B','#EF4444','#8B5CF6','#64748B','#EC4899','#14B8A6'];
 
-    let data = { 
-        txs: [], 
-        cats: { exp:['Esenciales','Deudas','Comida','Salidas','Varios'], inc:['Sueldo','Ventas','Otros'] }, 
-        concepts: {},
-        recurrentes: [],
-        monthlyRates: {} // SOPORTE HISTORICO
-    };
-    let currentTxs = [], editId = null, cExp = null, cInc = null;
+    let data = { txs: [], cats: { exp:['Esenciales','Varios'], inc:['Sueldo'] }, concepts: {}, recurrentes: [], monthlyRates: {} };
+    let currentTxs = [], editId = null, cExp = null, cInc = null, drillCat = null;
     let tempCat='', tempLink='';
     let currentDate = new Date(); currentDate.setDate(1);
 
     const fmt = (n) => n.toLocaleString('es-AR', {minimumFractionDigits: 0, maximumFractionDigits: 0});
 
-    window.onload = () => {
-        updateDateUI();
-        // Carga inicial (la API sobreescribirá esto luego)
-        forceSync(); 
-    };
+    window.onload = () => { updateDateUI(); forceSync(); };
 
-    // --- CORE LOGIC ---
+    // --- LOGICA PRINCIPAL ---
     function updateDateUI() { 
         document.getElementById('monthTxt').innerText = `${MONTHS[currentDate.getMonth()]} ${currentDate.getFullYear()}`; 
         loadData(); 
     }
-    function changeMonth(d) { 
-        currentDate.setMonth(currentDate.getMonth() + d); 
-        updateDateUI(); 
-    }
+    function changeMonth(d) { currentDate.setMonth(currentDate.getMonth() + d); updateDateUI(); }
     
-    // GUARDA TASAS EN EL MES CORRESPONDIENTE
     function saveRates() {
-        const y = currentDate.getFullYear(), m = currentDate.getMonth() + 1;
-        const key = `${y}-${m.toString().padStart(2,'0')}`;
-        
-        if(!data.monthlyRates) data.monthlyRates = {};
-        
-        data.monthlyRates[key] = {
-            USD: parseFloat(document.getElementById('usdRate').value) || 1200,
-            COP: parseFloat(document.getElementById('copRate').value) || 3700
-        };
-        saveData(); // Guarda en localStorage y nube
+        const key = getKey();
+        if(!data.monthlyRates) data.monthlyRates={};
+        data.monthlyRates[key] = { USD: parseFloat(document.getElementById('usdRate').value)||1200, COP: parseFloat(document.getElementById('copRate').value)||3700 };
+        saveData();
     }
+    function getKey() { return `${currentDate.getFullYear()}-${(currentDate.getMonth()+1).toString().padStart(2,'0')}`; }
 
     function loadData() {
         const y = currentDate.getFullYear(), m = currentDate.getMonth() + 1;
-        const key = `${y}-${m.toString().padStart(2,'0')}`;
-
-        // Recuperar tasas del mes o defaults
+        const key = getKey();
         let rates = (data.monthlyRates && data.monthlyRates[key]) ? data.monthlyRates[key] : { USD: 1200, COP: 3700 };
         
-        // Actualizar UI Inputs
         document.getElementById('usdRate').value = rates.USD;
         document.getElementById('copRate').value = rates.COP;
 
-        // Filtrar transacciones del mes
         currentTxs = (data.txs || []).filter(t => !t.deletedAt && parseInt(t.date.split('-')[0]) === y && parseInt(t.date.split('-')[1]) === m);
         
-        // Recalcular montos dinámicos
+        // LOGICA TC CORRECTA: Base 1 USD
         currentTxs.forEach(t => {
             if(!t.exec) {
                 if(t.curr === 'USD') t.amount = t.origAmt * rates.USD;
-                if(t.curr === 'COP') t.amount = t.origAmt * (rates.USD / rates.COP);
+                // Si tengo 3700 COP (Rate) = 1 USD y 1 USD = 1200 ARS. 
+                // Entonces t.amount (ARS) = (MontoCOP / RateCOP) * RateUSD
+                if(t.curr === 'COP') t.amount = (t.origAmt / rates.COP) * rates.USD; 
             }
         });
-
         currentTxs.sort((a,b) => b.date.localeCompare(a.date) || b.id - a.id);
         
-        renderDashboard();
-        renderAlloc();
-        renderCharts();
-        
-        // Limpiar buscador al cambiar de mes
-        document.getElementById('searchExp').value = '';
+        renderDash(); renderAlloc();
+        if(document.getElementById('view-stats').classList.contains('active')) renderStats();
     }
 
-    function renderDashboard() {
+    function renderDash() {
         const inc = currentTxs.filter(t=>t.type=='inc').reduce((a,b)=>a+b.amount,0);
         const exp = currentTxs.filter(t=>t.type=='exp').reduce((a,b)=>a+b.amount,0);
         const bal = inc - exp;
-        const rate = parseFloat(document.getElementById('usdRate').value) || 1;
+        const rate = parseFloat(document.getElementById('usdRate').value)||1;
 
         document.getElementById('kpiBal').innerText = `$${fmt(bal)}`;
         document.getElementById('kpiUsd').innerText = fmt(Math.round(bal/rate));
@@ -416,10 +369,9 @@
             el.className = `tx-card ${t.exec ? 'executed' : ''}`;
             el.onclick = () => edit(t.id);
             
-            let linkIcon = (t.linkId && !isInc) ? '<i class="fas fa-link" style="font-size:10px; color:var(--accent)"></i>' : '';
-            let currencyTag = '';
-            if(t.curr === 'USD') currencyTag = `<span style="background:#FEF3C7; color:#D97706; padding:1px 4px; border-radius:4px; font-weight:800; font-size:9px;">U$D ${t.origAmt}</span>`;
-            if(t.curr === 'COP') currencyTag = `<span style="background:#DBEAFE; color:#1E40AF; padding:1px 4px; border-radius:4px; font-weight:800; font-size:9px;">COP ${fmt(t.origAmt)}</span>`;
+            let currTag = '';
+            if(t.curr === 'USD') currTag = `<span style="color:#D97706; font-weight:800;">U$D ${t.origAmt}</span>`;
+            if(t.curr === 'COP') currTag = `<span style="color:#1E40AF; font-weight:800;">COP ${fmt(t.origAmt)}</span>`;
 
             el.innerHTML = `
                 <div class="tx-top">
@@ -427,235 +379,210 @@
                     <div class="tx-amt" style="color:${isInc?'var(--inc)':'var(--txt)'}">$${fmt(t.amount)}</div>
                 </div>
                 <div class="tx-sub">
-                    <div style="display:flex; gap:6px; align-items:center;">
-                        <span class="cat-tag">${t.cat}</span> ${linkIcon} ${currencyTag}
+                    <div style="display:flex; gap:4px; align-items:center;">
+                        <span class="cat-tag">${t.cat}</span> ${currTag}
+                        ${(t.linkId && !isInc) ? '<i class="fas fa-link text-accent"></i>' : ''}
                     </div>
                     <div>${t.date.split('-')[2]}</div>
                 </div>
             `;
             (isInc ? lInc : lExp).appendChild(el);
         });
+        filterExp();
     }
 
-    // --- NUEVO: BUSCADOR EGRESOS ---
-    function filterExpList() {
-        const term = document.getElementById('searchExp').value.toLowerCase();
-        const rows = document.querySelectorAll('#list-exp .tx-card');
-        rows.forEach(row => {
-            const text = row.innerText.toLowerCase();
-            row.style.display = text.includes(term) ? 'block' : 'none';
+    function filterExp() {
+        const term = document.getElementById('searchBar').value.toLowerCase();
+        document.querySelectorAll('#list-exp .tx-card').forEach(r => {
+            r.style.display = r.innerText.toLowerCase().includes(term) ? 'block' : 'none';
         });
     }
 
+    // --- ALLOCATION (DRILL DOWN) ---
     function renderAlloc() {
-        const cont = document.getElementById('alloc-container');
-        cont.innerHTML = '';
+        const c = document.getElementById('alloc-list'); c.innerHTML='';
         const incs = currentTxs.filter(t=>t.type=='inc');
         const exps = currentTxs.filter(t=>t.type=='exp');
 
         incs.forEach(inc => {
-            const sub = exps.filter(e => e.linkId == inc.id);
-            const spent = sub.reduce((a,b)=>a+b.amount,0);
+            const subs = exps.filter(e => e.linkId == inc.id);
+            const spent = subs.reduce((a,b)=>a+b.amount,0);
             const pct = inc.amount > 0 ? (spent/inc.amount)*100 : 0;
             const width = Math.min(pct, 100);
             const color = spent > inc.amount ? 'var(--exp)' : 'var(--accent)';
 
-            cont.innerHTML += `
-                <div class="alloc-card">
-                    <div class="alloc-head">
-                        <div style="font-weight:700; font-size:13px;">${inc.desc}</div>
-                        <div style="font-weight:800; font-size:13px;">$${fmt(spent)} <span style="color:#94A3B8; font-weight:500;">/ $${fmt(inc.amount)}</span></div>
+            const card = document.createElement('div');
+            card.className='alloc-card';
+            
+            let childHTML = '';
+            if(subs.length > 0) {
+                subs.forEach(s => {
+                    childHTML += `<div class="child-row"><span>${s.desc}</span><span>$${fmt(s.amount)}</span></div>`;
+                });
+            } else { childHTML = '<div class="child-row" style="font-style:italic;">Sin gastos asignados</div>'; }
+
+            card.innerHTML = `
+                <div class="alloc-head" onclick="this.parentElement.querySelector('.alloc-children').style.display = this.parentElement.querySelector('.alloc-children').style.display=='block'?'none':'block'">
+                    <div>
+                        <div style="font-weight:700; font-size:12px;">${inc.desc}</div>
+                        <div style="font-size:11px; color:var(--txt-sec);">${subs.length} gastos</div>
                     </div>
-                    <div class="alloc-prog"><div class="alloc-fill" style="width:${width}%; background:${color}"></div></div>
-                    <div style="padding:10px; font-size:11px; color:var(--txt-sec);">
-                        ${sub.length} movimientos vinculados
+                    <div style="text-align:right;">
+                        <div style="font-weight:800; font-size:12px;">$${fmt(spent)}</div>
+                        <div style="font-size:10px; color:${spent>inc.amount?'var(--exp)':'var(--txt-sec)'}">de $${fmt(inc.amount)}</div>
                     </div>
                 </div>
+                <div class="alloc-prog"><div class="alloc-fill" style="width:${width}%; background:${color}"></div></div>
+                <div class="alloc-children">${childHTML}</div>
             `;
+            c.appendChild(card);
         });
-        
-        const orphans = exps.filter(e => !e.linkId);
-        if(orphans.length > 0) {
-            const total = orphans.reduce((a,b)=>a+b.amount,0);
-            cont.innerHTML += `<div class="alloc-card" style="border-left:4px solid var(--exp);"><div class="alloc-head"><div style="font-weight:700; font-size:13px;">Sin Asignar</div><div style="font-weight:800; color:var(--exp)">$${fmt(total)}</div></div></div>`;
+        // Sin asignar
+        const orphans = exps.filter(e => !e.linkId).reduce((a,b)=>a+b.amount,0);
+        if(orphans > 0) {
+            c.innerHTML += `<div class="alloc-card" style="border-left:4px solid var(--exp); padding:10px;"><div style="font-weight:700; font-size:12px;">Sin Asignar</div><div style="font-weight:800; font-size:12px; color:var(--exp);">$${fmt(orphans)}</div></div>`;
         }
     }
 
-    // --- ADMIN & RECURRENTES (NUEVA LOGICA PC -> MOBILE) ---
+    // --- GRAPHS & ADMIN ---
+    function renderStats() {
+        renderRecurrentesList();
+        renderAdminTree();
+        renderDoughnut(document.getElementById('chartExp'), document.getElementById('legExp'), currentTxs.filter(t=>t.type=='exp'), 'cat', true);
+        renderDoughnut(document.getElementById('chartInc'), document.getElementById('legInc'), currentTxs.filter(t=>t.type=='inc'), 'desc', false);
+    }
+
+    function renderDoughnut(cvs, leg, txs, key, drill) {
+        if(drill && drillCat) { 
+             document.getElementById('resetBtn').style.display='block';
+             txs = txs.filter(t=>t.cat == drillCat); 
+             key = 'desc'; 
+        } else { document.getElementById('resetBtn').style.display='none'; }
+
+        let map={};
+        txs.forEach(t=>{ const k=t[key]||'Gral'; map[k]=(map[k]||0)+t.amount; });
+        const ent = Object.entries(map).sort((a,b)=>b[1]-a[1]);
+        const tot = ent.reduce((a,b)=>a+b[1],0);
+
+        // ChartJS Destroy & Create
+        const chartInstance = Chart.getChart(cvs);
+        if(chartInstance) chartInstance.destroy();
+
+        new Chart(cvs, {
+            type: 'doughnut',
+            data: {
+                labels: ent.map(e=>e[0]),
+                datasets: [{ data: ent.map(e=>e[1]), backgroundColor: PALETTE, borderWidth:0 }]
+            },
+            options: { responsive:true, maintainAspectRatio:false, cutout:'70%', plugins:{legend:{display:false}} }
+        });
+
+        // HTML Legend
+        leg.innerHTML = '';
+        ent.forEach((e,i) => {
+            const pct = Math.round((e[1]/tot)*100);
+            const item = document.createElement('div');
+            item.className = 'legend-item';
+            item.onclick = () => { if(drill && !drillCat) { drillCat = e[0]; renderStats(); } };
+            item.innerHTML = `
+                <div style="display:flex; align-items:center; flex:1; min-width:0;">
+                    <div class="legend-dot" style="background:${PALETTE[i%PALETTE.length]}"></div>
+                    <div class="legend-name">${e[0]}</div>
+                </div>
+                <div style="display:flex; align-items:center;">
+                    <div class="legend-pct">${pct}%</div>
+                    <div class="legend-val">$${fmt(e[1])}</div>
+                </div>
+            `;
+            leg.appendChild(item);
+        });
+    }
+    function resetCharts() { drillCat=null; renderStats(); }
+
     function renderRecurrentesList() {
-        const div = document.getElementById('list-recurrentes');
-        if(!div) return;
-        div.innerHTML = '';
-        
-        if(!data.recurrentes || data.recurrentes.length === 0) {
-            div.innerHTML = '<div style="text-align:center; font-size:10px; color:#94A3B8;">Sin recurrentes configurados</div>';
-            return;
-        }
-
-        data.recurrentes.forEach((r, i) => {
-            const row = document.createElement('div');
-            row.style.cssText = "display:flex; justify-content:space-between; align-items:center; font-size:11px; padding:4px 0; border-bottom:1px solid rgba(0,0,0,0.05);";
-            row.innerHTML = `
-                <div style="font-weight:700; color:var(--txt);">${r.desc}</div>
-                <div style="display:flex; gap:10px; align-items:center;">
-                    <span style="color:var(--txt-sec);">$${fmt(r.amount)}</span>
-                    <button onclick="delRecurrente(${i})" style="color:#EF4444; border:none; background:none;"><i class="fas fa-times"></i></button>
-                </div>
-            `;
-            div.appendChild(row);
+        const c = document.getElementById('list-recurrentes'); c.innerHTML='';
+        if(!data.recurrentes.length) { c.innerHTML='<div style="text-align:center; color:#cbd5e1; font-size:10px;">Sin recurrentes</div>'; return; }
+        data.recurrentes.forEach((r,i) => {
+            const d=document.createElement('div'); d.style.cssText="display:flex; justify-content:space-between; border-bottom:1px solid #f1f5f9; padding:4px 0; font-size:10px;";
+            d.innerHTML=`<span>${r.desc}</span><div style="display:flex; gap:10px;"><b>$${fmt(r.amount)}</b><i class="fas fa-times text-exp" onclick="data.recurrentes.splice(${i},1);saveData();renderStats()"></i></div>`;
+            c.appendChild(d);
         });
     }
 
-    function addRecurrenteUI() {
-        const desc = prompt("Nombre del gasto recurrente (Ej: Alquiler):");
-        if(!desc) return;
-        const amt = prompt("Monto estimado ($):");
-        if(!amt) return;
+    function renderAdminTree() {
+        const c = document.getElementById('admin-tree'); c.innerHTML='';
+        const types = [{k:'exp',l:'Gastos'}, {k:'inc',l:'Ingresos'}];
         
-        const cat = data.cats.exp[0] || 'Varios';
-        
-        data.recurrentes.push({
-            desc: desc,
-            amount: parseFloat(amt),
-            cat: cat,
-            type: 'exp'
+        types.forEach(type => {
+            (data.cats[type.k]||[]).forEach(cat => {
+                const node = document.createElement('div'); node.className='tree-node';
+                const concepts = data.concepts[cat]||[];
+                node.innerHTML = `
+                    <div class="tree-head" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display=='flex'?'none':'flex'">
+                        <span>${cat} <span style="font-weight:400; color:#94a3b8;">(${concepts.length})</span></span>
+                        <i class="fas fa-trash del-btn" onclick="event.stopPropagation();delCat('${type.k}','${cat}')"></i>
+                    </div>
+                    <div class="tree-body">
+                        ${concepts.map(con => `
+                            <div class="concept-tag">${con} <i class="fas fa-times del-btn" onclick="delCon('${cat}','${con}')"></i></div>
+                        `).join('')}
+                        <div class="concept-tag" style="background:white; border:1px dashed #cbd5e1; color:var(--accent);" onclick="addCon('${cat}')">+ Subcat</div>
+                    </div>
+                `;
+                c.appendChild(node);
+            });
         });
-        saveData();
-        renderRecurrentesList();
     }
-
-    function delRecurrente(index) {
-        if(confirm('¿Borrar este gasto recurrente?')) {
-            data.recurrentes.splice(index, 1);
-            saveData();
-            renderRecurrentesList();
-        }
-    }
-
-    function populateRecurringDefaults() {
-        if(!confirm("¿Analizar historial de 3 meses y sugerir recurrentes?")) return;
-        
-        const limitDate = new Date(); 
-        limitDate.setDate(limitDate.getDate() - 90);
-        
-        const recent = data.txs.filter(t => !t.deletedAt && t.type === 'exp' && new Date(t.date) >= limitDate);
-        const analysis = {};
-        
-        recent.forEach(t => { 
-            const d = t.desc.trim(); 
-            if(!analysis[d]) analysis[d] = { count: 0, lastAmt: 0, cat: t.cat, dates: new Set() }; 
-            analysis[d].count++; 
-            analysis[d].lastAmt = t.origAmt || t.amount; 
-            analysis[d].cat = t.cat; 
-            analysis[d].dates.add(t.date.substring(0, 7)); 
-        });
-        
-        let added = 0;
-        Object.entries(analysis).forEach(([desc, info]) => {
-            const exists = data.recurrentes.some(r => r.desc.toLowerCase() === desc.toLowerCase());
-            if((info.dates.size >= 2 || info.count >= 2) && !exists) {
-                data.recurrentes.push({ desc: desc, amount: info.lastAmt, cat: info.cat, type: 'exp' });
-                added++;
-            }
-        });
-        
-        alert(added > 0 ? `Se agregaron ${added} sugerencias nuevas.` : "No se encontraron nuevos patrones.");
-        saveData();
-        renderRecurrentesList();
-    }
+    function delCat(t,c){ if(confirm('Borrar categoria?')) { data.cats[t]=data.cats[t].filter(x=>x!==c); delete data.concepts[c]; saveData(); renderStats(); }}
+    function delCon(c,n){ if(confirm('Borrar subcategoria?')) { data.concepts[c]=data.concepts[c].filter(x=>x!==n); saveData(); renderStats(); }}
+    function addCon(c){ const n=prompt('Nueva subcategoría:'); if(n){ if(!data.concepts[c])data.concepts[c]=[]; data.concepts[c].push(n); saveData(); renderStats(); }}
 
     function executeRecurrentes() {
-        const y=currentDate.getFullYear(), m=currentDate.getMonth()+1; 
-        let c=0; 
-        if(!data.recurrentes || data.recurrentes.length === 0) return alert('No hay recurrentes configurados');
-        
-        data.recurrentes.forEach(r=>{ 
-            if(!data.txs.some(t=>!t.deletedAt && t.desc==r.desc && parseInt(t.date.split('-')[0])==y && parseInt(t.date.split('-')[1])==m)){ 
-                data.txs.push({...r, id:Date.now()+Math.random(), date:`${y}-${m.toString().padStart(2,'0')}-01`, exec:false, linkId:null, deletedAt:null, origAmt:r.amount, curr:'ARS'}); 
-                c++; 
+        const txt = document.getElementById('monthTxt').innerText;
+        if(!confirm(`¿Ejecutar recurrentes en ${txt}?`)) return;
+        const y=currentDate.getFullYear(), m=currentDate.getMonth()+1;
+        let c=0;
+        data.recurrentes.forEach(r=>{
+            if(!data.txs.some(t=>!t.deletedAt && t.desc==r.desc && parseInt(t.date.split('-')[0])==y && parseInt(t.date.split('-')[1])==m)){
+                 data.txs.push({...r, id:Date.now()+Math.random(), date:`${y}-${m.toString().padStart(2,'0')}-01`, exec:false, linkId:null, deletedAt:null, origAmt:r.amount, curr:'ARS'});
+                 c++;
             }
-        }); 
-        if(c>0){ saveData(); alert('Generados: '+c); } else alert('Ya estaban cargados');
+        });
+        alert(c>0 ? `Generados ${c}` : 'Ya estaban generados'); saveData();
     }
-
-    function cloneMonth() {
+    function cloneMonth(){
         if(!confirm('¿Copiar mes ANTERIOR al actual?')) return;
-        const prevDate = new Date(currentDate);
-        prevDate.setMonth(prevDate.getMonth() - 1);
-        const py = prevDate.getFullYear(), pm = prevDate.getMonth() + 1;
-        
-        const src = data.txs.filter(t=>!t.deletedAt && parseInt(t.date.split('-')[0])==py && parseInt(t.date.split('-')[1])==pm);
-        const tgt = `${currentDate.getFullYear()}-${(currentDate.getMonth()+1).toString().padStart(2,'0')}-01`;
-        
-        if(src.length === 0) return alert('El mes anterior está vacío');
-
-        let map={}, n=[]; 
-        src.filter(t=>t.type=='inc').forEach(t=>{const id=Date.now()+Math.random(); map[t.id]=id; n.push({...t,id,date:tgt,exec:false});}); 
-        src.filter(t=>t.type=='exp').forEach(t=>{const id=Date.now()+Math.random(); n.push({...t,id,date:tgt,exec:false,linkId:t.linkId?map[t.linkId]:null});}); 
-        
-        data.txs.push(...n); 
-        saveData();
-        alert(`Se copiaron ${n.length} registros`);
+        const prev = new Date(currentDate); prev.setMonth(prev.getMonth()-1);
+        const py=prev.getFullYear(), pm=prev.getMonth()+1;
+        const src=data.txs.filter(t=>!t.deletedAt && parseInt(t.date.split('-')[0])==py && parseInt(t.date.split('-')[1])==pm);
+        const tgt=`${currentDate.getFullYear()}-${(currentDate.getMonth()+1).toString().padStart(2,'0')}-01`;
+        if(!src.length) return alert('Mes anterior vacío');
+        let map={}, n=[];
+        src.filter(t=>t.type=='inc').forEach(t=>{const id=Date.now()+Math.random(); map[t.id]=id; n.push({...t,id,date:tgt,exec:false});});
+        src.filter(t=>t.type=='exp').forEach(t=>{const id=Date.now()+Math.random(); n.push({...t,id,date:tgt,exec:false,linkId:t.linkId?map[t.linkId]:null});});
+        data.txs.push(...n); saveData(); alert('Copiados');
     }
-
-    function clearMonth() {
-        if(confirm('¿BORRAR todo este mes? Esta acción no se puede deshacer.')) {
-            const y = currentDate.getFullYear(), m = currentDate.getMonth() + 1;
-            let count = 0;
-            data.txs.forEach(t=>{
-                if(parseInt(t.date.split('-')[0])==y && parseInt(t.date.split('-')[1])==m) {
-                    t.deletedAt=Date.now();
-                    count++;
-                }
-            });
+    function clearMonth(){
+        if(confirm('ATENCIÓN: Se borrarán todos los datos visible. ¿Seguro?')) {
+            const y=currentDate.getFullYear(), m=currentDate.getMonth()+1;
+            data.txs.forEach(t=>{ if(parseInt(t.date.split('-')[0])==y && parseInt(t.date.split('-')[1])==m) t.deletedAt=Date.now(); });
             saveData();
-            alert(`Se eliminaron ${count} registros`);
         }
     }
 
-    function renderAdminCats() {
-        const div = document.getElementById('admin-cat-list');
-        if(!div) return;
-        div.innerHTML = '';
-        
-        const allCats = [...(data.cats.exp || []), ...(data.cats.inc || [])];
-        
-        allCats.forEach(c => {
-            const chip = document.createElement('div');
-            chip.style.cssText = "font-size:10px; padding:4px 8px; background:#F1F5F9; border-radius:6px; color:var(--txt); border:1px solid transparent; cursor:pointer;";
-            chip.innerText = c + " ×";
-            chip.onclick = () => {
-                if(confirm(`¿Eliminar categoría "${c}" y sus conceptos?`)) {
-                    if(data.cats.exp) data.cats.exp = data.cats.exp.filter(x => x !== c);
-                    if(data.cats.inc) data.cats.inc = data.cats.inc.filter(x => x !== c);
-                    delete data.concepts[c];
-                    saveData();
-                    renderAdminCats();
-                }
-            };
-            div.appendChild(chip);
-        });
-    }
-
-    // --- FORM & ACTIONS ---
+    // --- SHEET & FORM ---
     function openNewTx() { editId=null; resetForm(); openSheet(); }
     function openSheet() { document.getElementById('sheet').classList.add('open'); }
     function closeSheet() { document.getElementById('sheet').classList.remove('open'); }
-    
     function resetForm() {
         document.getElementById('txForm').reset();
         document.getElementById('btnDel').style.display = 'none';
-        
         const now = new Date();
-        const y = currentDate.getFullYear();
-        const m = (currentDate.getMonth()+1).toString().padStart(2,'0');
-        const d = (y===now.getFullYear() && (currentDate.getMonth())===now.getMonth()) ? now.getDate().toString().padStart(2,'0') : '01';
+        const y=currentDate.getFullYear(), m=(currentDate.getMonth()+1).toString().padStart(2,'0');
+        const d=(y==now.getFullYear() && (currentDate.getMonth())==now.getMonth()) ? now.getDate().toString().padStart(2,'0') : '01';
         document.getElementById('fDate').value = `${y}-${m}-${d}`;
-        
-        setType('exp');
-        tempCat=''; tempLink=''; renderLinkChips();
+        setType('exp'); tempCat=''; tempLink=''; renderLinkChips();
     }
-
     function setType(t) {
         document.getElementById('fType').value = t;
         document.getElementById('seg-exp').className = `tab-btn ${t=='exp'?'active':''}`;
@@ -663,233 +590,102 @@
         document.getElementById('linkSection').style.display = t=='exp'?'block':'none';
         renderCatChips(t);
     }
-
     function renderCatChips(type) {
-        const div = document.getElementById('catChips'); div.innerHTML = '';
-        (data.cats[type]||[]).forEach(c => {
-            const el = document.createElement('div');
-            el.className = `chip ${tempCat===c ? 'active' : ''}`;
-            el.innerText = c;
-            el.onclick = () => {
-                tempCat = c; document.getElementById('fCat').value = c;
-                renderCatChips(type); renderConChips(c);
-            };
-            div.appendChild(el);
+        const c = document.getElementById('catChips'); c.innerHTML='';
+        (data.cats[type]||[]).forEach(cat => {
+            const el = document.createElement('div'); el.className=`chip ${tempCat==cat?'active':''}`; el.innerText=cat;
+            el.onclick=()=>{ tempCat=cat; document.getElementById('fCat').value=cat; renderCatChips(type); renderConChips(cat); };
+            c.appendChild(el);
         });
         const add = document.createElement('div'); add.className='chip'; add.innerHTML='<i class="fas fa-plus"></i>';
-        add.onclick = () => {
-            const n = prompt('Nueva Categoría:');
-            if(n) { if(!data.cats[type]) data.cats[type]=[]; data.cats[type].push(n); data.concepts[n]=[]; saveData(); renderCatChips(type); }
-        };
-        div.appendChild(add);
-        
-        if(tempCat && (data.cats[type]||[]).includes(tempCat)) renderConChips(tempCat);
-        else document.getElementById('conChips').innerHTML = '';
+        add.onclick=()=>{ const n=prompt('Nueva Categoría:'); if(n){ if(!data.cats[type])data.cats[type]=[]; data.cats[type].push(n); data.concepts[n]=[]; saveData(); renderCatChips(type); }};
+        c.appendChild(add);
+        if(tempCat && (data.cats[type]||[]).includes(tempCat)) renderConChips(tempCat); else document.getElementById('conChips').innerHTML='';
     }
-
     function renderConChips(cat) {
-        const div = document.getElementById('conChips'); div.innerHTML='';
-        (data.concepts[cat]||[]).forEach(c => {
-            const el = document.createElement('div');
-            el.className = `chip ${document.getElementById('fConcept').value===c ? 'active' : ''}`;
-            el.innerText = c;
-            el.onclick = () => {
-                document.getElementById('fConcept').value = c;
-                document.getElementById('fCustomDesc').style.display='none';
-                renderConChips(cat);
-            };
-            div.appendChild(el);
+        const c = document.getElementById('conChips'); c.innerHTML='';
+        (data.concepts[cat]||[]).forEach(con => {
+            const el=document.createElement('div'); el.className=`chip ${document.getElementById('fConcept').value==con?'active':''}`; el.innerText=con;
+            el.onclick=()=>{ document.getElementById('fConcept').value=con; document.getElementById('fCustomDesc').style.display='none'; renderConChips(cat); };
+            c.appendChild(el);
         });
-        const add = document.createElement('div'); add.className='chip'; add.innerText='Otro...';
-        add.onclick = () => {
-            document.getElementById('fConcept').value = 'new';
-            document.getElementById('fCustomDesc').style.display='block';
-            document.getElementById('fCustomDesc').focus();
-            renderConChips(cat);
-        };
-        div.appendChild(add);
+        const add=document.createElement('div'); add.className='chip'; add.innerText='Otro...';
+        add.onclick=()=>{ document.getElementById('fConcept').value='new'; document.getElementById('fCustomDesc').style.display='block'; document.getElementById('fCustomDesc').focus(); renderConChips(cat); };
+        c.appendChild(add);
     }
-
     function renderLinkChips() {
-        const div = document.getElementById('linkChips'); div.innerHTML='';
-        const def = document.createElement('div'); def.className=`chip ${!tempLink?'active':''}`; def.innerText='Ninguno';
-        def.onclick=()=>{ tempLink=''; document.getElementById('fLink').value=''; renderLinkChips(); };
-        div.appendChild(def);
-        
-        currentTxs.filter(t=>t.type=='inc').forEach(i => {
-            const el = document.createElement('div');
-            el.className=`chip ${tempLink==i.id?'active':''}`;
-            el.innerText = i.desc;
-            el.onclick = () => { tempLink=i.id; document.getElementById('fLink').value=i.id; renderLinkChips(); };
-            div.appendChild(el);
+        const c=document.getElementById('linkChips'); c.innerHTML='';
+        const def=document.createElement('div'); def.className=`chip ${!tempLink?'active':''}`; def.innerText='Ninguno';
+        def.onclick=()=>{tempLink=''; document.getElementById('fLink').value=''; renderLinkChips();}; c.appendChild(def);
+        currentTxs.filter(t=>t.type=='inc').forEach(i=>{
+            const el=document.createElement('div'); el.className=`chip ${tempLink==i.id?'active':''}`; el.innerText=i.desc;
+            el.onclick=()=>{tempLink=i.id; document.getElementById('fLink').value=i.id; renderLinkChips();}; c.appendChild(el);
         });
     }
 
     document.getElementById('txForm').onsubmit = (e) => {
         e.preventDefault();
-        
-        let cat = document.getElementById('fCat').value;
-        if(!cat) return alert('Selecciona categoría');
-        
+        let cat = document.getElementById('fCat').value; if(!cat) return alert('Categoría?');
         let desc = document.getElementById('fConcept').value;
-        if(desc === 'new' || !desc) {
-            desc = document.getElementById('fCustomDesc').value;
-            if(desc && !data.concepts[cat].includes(desc)) data.concepts[cat].push(desc);
-        }
-
-        const rateUSD = parseFloat(document.getElementById('usdRate').value) || 1200;
-        const rateCOP = parseFloat(document.getElementById('copRate').value) || 3700;
+        if(desc=='new'||!desc) { desc=document.getElementById('fCustomDesc').value; if(desc && !data.concepts[cat].includes(desc)) data.concepts[cat].push(desc); }
+        
         const origAmt = parseFloat(document.getElementById('fAmount').value);
         const curr = document.getElementById('fCurr').value;
+        const rates = { USD: parseFloat(document.getElementById('usdRate').value), COP: parseFloat(document.getElementById('copRate').value) };
         
         let amount = origAmt;
-        if(curr === 'USD') amount = origAmt * rateUSD;
-        if(curr === 'COP') amount = origAmt * (rateUSD / rateCOP);
+        if(curr === 'USD') amount = origAmt * rates.USD;
+        if(curr === 'COP') amount = (origAmt / rates.COP) * rates.USD; // LOGICA FORMULA GUARDADO
 
         const tx = {
-            id: editId || Date.now(),
-            date: document.getElementById('fDate').value,
-            amount: amount, 
-            origAmt: origAmt, 
-            curr: curr,
-            type: document.getElementById('fType').value,
-            cat: cat,
-            desc: desc,
-            exec: document.getElementById('fExec').checked,
-            linkId: document.getElementById('fLink').value || null
+            id: editId || Date.now(), date: document.getElementById('fDate').value,
+            amount: amount, origAmt: origAmt, curr: curr,
+            type: document.getElementById('fType').value, cat: cat, desc: desc,
+            exec: document.getElementById('fExec').checked, linkId: document.getElementById('fLink').value || null
         };
-
-        if(editId) {
-            const idx = data.txs.findIndex(x => x.id == editId);
-            if(idx > -1) data.txs[idx] = tx;
-        } else {
-            data.txs.push(tx);
-        }
-
-        saveData();
-        closeSheet();
+        if(editId) { const i=data.txs.findIndex(x=>x.id==editId); if(i>-1) data.txs[i]=tx; } else data.txs.push(tx);
+        saveData(); closeSheet();
     };
 
     function edit(id) {
-        editId = id;
-        const t = data.txs.find(x => x.id == id);
-        if(!t) return;
-
-        document.getElementById('fAmount').value = t.origAmt || t.amount;
-        document.getElementById('fCurr').value = t.curr || 'ARS';
-        document.getElementById('fDate').value = t.date;
-        document.getElementById('fExec').checked = t.exec;
-        document.getElementById('btnDel').style.display = 'block';
-
-        setType(t.type);
-        tempCat = t.cat; document.getElementById('fCat').value = t.cat; renderCatChips(t.type);
-        
-        document.getElementById('fConcept').value = t.desc; renderConChips(t.cat);
-        if(!data.concepts[t.cat]?.includes(t.desc)) {
-             document.getElementById('fConcept').value = 'new';
-             document.getElementById('fCustomDesc').style.display='block';
-             document.getElementById('fCustomDesc').value = t.desc;
-        }
-
-        tempLink = t.linkId || ''; document.getElementById('fLink').value = tempLink; renderLinkChips();
+        editId=id; const t=data.txs.find(x=>x.id==id); if(!t)return;
+        document.getElementById('fAmount').value=t.origAmt||t.amount; document.getElementById('fCurr').value=t.curr||'ARS';
+        document.getElementById('fDate').value=t.date; document.getElementById('fExec').checked=t.exec;
+        document.getElementById('btnDel').style.display='block';
+        setType(t.type); tempCat=t.cat; document.getElementById('fCat').value=t.cat; renderCatChips(t.type);
+        document.getElementById('fConcept').value=t.desc; renderConChips(t.cat);
+        if(!data.concepts[t.cat]?.includes(t.desc)){ document.getElementById('fConcept').value='new'; document.getElementById('fCustomDesc').style.display='block'; document.getElementById('fCustomDesc').value=t.desc; }
+        tempLink=t.linkId||''; document.getElementById('fLink').value=tempLink; renderLinkChips();
         openSheet();
     }
-
-    function delTx() {
-        if(confirm('¿Eliminar transacción?')) {
-            const idx = data.txs.findIndex(x => x.id == editId);
-            if(idx > -1) data.txs[idx].deletedAt = Date.now();
-            saveData();
-            closeSheet();
-        }
-    }
-
-    // --- SYNC ---
-    async function forceSync() {
-        document.getElementById('loader').style.display = 'flex';
-        try {
-            const r = await fetch(API_URL);
-            const cloudData = await r.json();
-            if(cloudData) {
-                data.txs = cloudData.txs || [];
-                data.cats = cloudData.cats || data.cats;
-                data.concepts = cloudData.concepts || data.concepts;
-                data.recurrentes = cloudData.recurrentes || [];
-                data.monthlyRates = cloudData.monthlyRates || data.monthlyRates || {};
-                
-                // Si la nube tiene tasas, usarlas; si no, mantener lo que tenemos
-                saveData(); 
-                document.getElementById('syncDot').style.background = '#10B981';
-            }
-        } catch(e) { console.error(e); }
-        document.getElementById('loader').style.display = 'none';
-    }
-
-    async function saveData() {
-        document.getElementById('syncDot').style.background = '#F59E0B';
-        localStorage.setItem('finance_mobile_data_v2', JSON.stringify(data));
-        loadData(); 
-        try {
-            await fetch(API_URL, {method:'POST', body:JSON.stringify(data)});
-            document.getElementById('syncDot').style.background = '#10B981';
-        } catch(e) {
-            document.getElementById('syncDot').style.background = '#EF4444';
-        }
-    }
-
-    // --- CHARTS ---
-    function renderCharts() {
-        renderDoughnut('chartExp', 'exp');
-        renderDoughnut('chartInc', 'inc');
-    }
-    
-    function renderDoughnut(cvsId, type) {
-        if(type=='exp' && cExp) cExp.destroy();
-        if(type=='inc' && cInc) cInc.destroy();
-        
-        const txs = currentTxs.filter(t=>t.type==type);
-        const map = {};
-        txs.forEach(t => map[t.cat] = (map[t.cat]||0) + t.amount);
-        
-        const labels = Object.keys(map);
-        const vals = Object.values(map);
-        
-        const cfg = {
-            type: 'doughnut',
-            data: {
-                labels: labels,
-                datasets: [{ data: vals, backgroundColor: COLORS, borderWidth:0 }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { position:'right', labels:{boxWidth:10, font:{size:10}} } }
-            }
-        };
-        
-        const ctx = document.getElementById(cvsId).getContext('2d');
-        if(type=='exp') cExp = new Chart(ctx, cfg);
-        else cInc = new Chart(ctx, cfg);
-    }
+    function delTx(){ if(confirm('Eliminar?')){ data.txs.find(x=>x.id==editId).deletedAt=Date.now(); saveData(); closeSheet(); }}
 
     function nav(v) {
-        document.querySelectorAll('.view-section').forEach(e => e.classList.remove('active'));
-        document.querySelectorAll('.nav-btn').forEach(e => e.classList.remove('active'));
+        document.querySelectorAll('.view-section').forEach(e=>e.classList.remove('active'));
+        document.querySelectorAll('.nav-btn').forEach(e=>e.classList.remove('active'));
         document.getElementById(`view-${v}`).classList.add('active');
         document.getElementById(`nav-${v}`).classList.add('active');
-        
-        // TRIGGER ADMIN RENDER SI ENTRA A STATS
-        if(v === 'stats') {
-            renderRecurrentesList();
-            renderAdminCats();
-        }
+        if(v=='stats') renderStats();
     }
-    
     function setSubTab(t) {
-        document.getElementById('sec-txs').style.display = t === 'txs' ? 'grid' : 'none';
-        document.getElementById('sec-alloc').style.display = t === 'alloc' ? 'block' : 'none';
-        document.getElementById('tab-txs').className = `tab-btn ${t==='txs'?'active':''}`;
-        document.getElementById('tab-alloc').className = `tab-btn ${t==='alloc'?'active':''}`;
+        document.getElementById('sec-txs').style.display=t=='txs'?'flex':'none';
+        document.getElementById('sec-alloc').style.display=t=='alloc'?'block':'none';
+        document.getElementById('tab-txs').className=`tab-btn ${t=='txs'?'active':''}`;
+        document.getElementById('tab-alloc').className=`tab-btn ${t=='alloc'?'active':''}`;
+    }
+
+    async function forceSync() {
+        document.getElementById('loader').style.display='flex';
+        try {
+            const r = await fetch(API_URL); const d = await r.json();
+            if(d) { data.txs=d.txs||[]; data.cats=d.cats||data.cats; data.concepts=d.concepts||data.concepts; data.recurrentes=d.recurrentes||[]; data.monthlyRates=d.monthlyRates||{}; saveData(); document.getElementById('syncDot').style.background='#10B981'; }
+        } catch(e){ console.error(e); }
+        document.getElementById('loader').style.display='none';
+    }
+    async function saveData() {
+        document.getElementById('syncDot').style.background='#F59E0B';
+        localStorage.setItem('finance_mobile_data_v3', JSON.stringify(data)); loadData();
+        try { await fetch(API_URL, {method:'POST', body:JSON.stringify(data)}); document.getElementById('syncDot').style.background='#10B981'; } catch(e){ document.getElementById('syncDot').style.background='#EF4444'; }
     }
 </script>
 </body>
