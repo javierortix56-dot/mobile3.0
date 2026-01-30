@@ -558,6 +558,7 @@
         
         renderDash(); 
         renderAlloc();
+        // AQUI ESTABA EL ERROR: Llamamos a renderSettings() explícitamente si estamos en la vista
         if(document.getElementById('view-stats').classList.contains('active')) renderStats();
         if(document.getElementById('view-settings').classList.contains('active')) renderSettings();
         if(document.getElementById('view-networth').classList.contains('active')) renderNetWorth();
@@ -646,7 +647,6 @@
     // --- NET WORTH LOGIC ---
     function renderNetWorth() {
         const rates = { ARS: parseFloat(document.getElementById('rateArs').value)||1200, COP: parseFloat(document.getElementById('rateCop').value)||3700 };
-        // Filtrar por fecha de corte (fin de mes actual)
         const currentEnd = new Date(currentDate.getFullYear(), currentDate.getMonth()+1, 0).toISOString().split('T')[0];
         const balances = computeBalancesAsOf(currentEnd, rates);
         
@@ -655,9 +655,7 @@
         
         let totalAssets = 0, totalLiabs = 0;
 
-        // Mostrar cuentas activas a la fecha actual
         data.accounts.forEach(a => {
-            // Si la cuenta se crea DESPUES del periodo actual, no la mostramos (o saldo 0)
             if(a.dateCreated && a.dateCreated > currentEnd) return;
 
             const bal = balances[a.id] || 0;
@@ -696,7 +694,6 @@
     function computeBalancesAsOf(isoEnd, rates) {
         const bal = {};
         data.accounts.forEach(a => { 
-            // Si la cuenta no existía en esa fecha, saldo 0
             if(a.dateCreated && a.dateCreated > isoEnd) {
                 bal[a.id] = 0;
             } else {
@@ -1044,7 +1041,6 @@
             c.appendChild(card);
         });
 
-        // RESTORED ORPHAN LOGIC
         const orphans = exps.filter(e => !e.linkId);
         const orphansFiltered = term ? orphans.filter(e => e.desc.toLowerCase().includes(term)) : orphans;
         const orphansTotal = orphans.reduce((a,b)=>a+b.amount,0);
@@ -1106,6 +1102,12 @@
         });
     }
     function resetChart(type) { if(type === 'exp') drillCatExp = null; if(type === 'inc') drillCatInc = null; renderStats(); }
+
+    // --- AQUI ESTA LA FUNCION QUE FALTABA ---
+    function renderSettings() {
+        renderRecurrentesList();
+        renderAdminTree();
+    }
 
     function renderRecurrentesList() {
         const c = document.getElementById('list-recurrentes'); c.innerHTML='';
