@@ -116,6 +116,9 @@
         .child-row { padding: 8px 10px; display: flex; justify-content: space-between; font-size: 11px; color: var(--txt); border-bottom: 1px solid rgba(0,0,0,0.03); cursor: pointer; } 
         .child-row:active { background: #F1F5F9; }
         
+        /* CORRECCIÓN TACHADO EN ASIGNACIÓN */
+        .child-row.executed span { text-decoration: line-through; opacity: 0.6; }
+        
         .alloc-tools { display: flex; gap:8px; margin-bottom:10px; }
         .btn-alloc { flex:1; padding:10px; border-radius:8px; font-size:10px; font-weight:700; border:none; display:flex; align-items:center; justify-content:center; gap:6px; cursor:pointer; }
         .btn-auto { background: linear-gradient(135deg, #3B82F6, #2563EB); color: white; box-shadow: 0 2px 5px rgba(37, 99, 235, 0.3); }
@@ -163,7 +166,7 @@
         input:checked + .slider { background-color: var(--inc); }
         input:checked + .slider:before { -webkit-transform: translateX(14px); -ms-transform: translateX(14px); transform: translateX(14px); }
 
-        /* SETTINGS */
+        /* SETTINGS & TREE */
         .settings-group { margin-bottom: 20px; }
         .tree-node { margin-bottom: 6px; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: white; }
         .tree-head { padding: 6px 10px; background: #F8FAFC; display: flex; justify-content: space-between; align-items: center; font-size: 10px; font-weight: 700; cursor: pointer; }
@@ -171,6 +174,10 @@
         .concept-tag { font-size: 9px; padding: 2px 6px; background: #F1F5F9; border-radius: 4px; border: 1px solid transparent; display: flex; align-items: center; gap: 3px; }
 
         .loader { position:fixed; inset:0; background:rgba(255,255,255,0.8); z-index:200; display:none; align-items:center; justify-content:center; }
+        
+        /* LOCK ICON */
+        .lock-badge { font-size:10px; color:#EF4444; margin-right:5px; animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { opacity:0.5; } 50% { opacity:1; } 100% { opacity:0.5; } }
     </style>
 </head>
 <body>
@@ -178,7 +185,11 @@
 <div id="loader" class="loader"><i class="fas fa-circle-notch fa-spin fa-2x" style="color:var(--primary)"></i></div>
 
 <div class="header">
-    <div class="brand">Finanzas J&M Pro <div id="syncDot" class="sync-dot"></div></div>
+    <div class="brand">
+        <i class="fas fa-lock lock-badge" id="lockIcon" style="display:none;"></i>
+        Finanzas J&M Pro 
+        <div id="syncDot" class="sync-dot"></div>
+    </div>
     <div class="date-pill" onclick="changeMonth(0)"> 
         <button class="btn-arrow" onclick="event.stopPropagation(); changeMonth(-1)"><i class="fas fa-chevron-left"></i></button>
         <div class="date-txt" id="monthTxt">...</div>
@@ -198,8 +209,8 @@
                         <div class="hero-usd">≈ USD <span id="kpiUsd">0</span></div>
                     </div>
                     <div style="display:flex; flex-direction:column; align-items:flex-end;">
-                        <div class="tc-widget">1 USD = <input type="number" id="rateArs" value="1200" class="tc-inp" onchange="saveRates()"> ARS</div>
-                        <div class="tc-widget">1 USD = <input type="number" id="rateCop" value="3700" class="tc-inp" onchange="saveRates()"> COP</div>
+                        <div class="tc-widget">1 USD = <input type="number" inputmode="decimal" id="rateArs" value="1200" class="tc-inp" onchange="saveRates()"> ARS</div>
+                        <div class="tc-widget">1 USD = <input type="number" inputmode="decimal" id="rateCop" value="3700" class="tc-inp" onchange="saveRates()"> COP</div>
                     </div>
                 </div>
                 <div class="hero-stats">
@@ -303,8 +314,8 @@
                 <span class="inp-lbl">Gastos Recurrentes</span>
                 <span style="color:var(--accent); font-size:10px; font-weight:700; cursor:pointer;" onclick="addRecurrenteUI()">+ Agregar</span>
             </div>
-            <div id="list-recurrentes" style="background:white; border-radius:10px; padding:8px; margin-bottom:8px; max-height:150px; overflow-y:auto; border:1px solid var(--border);"></div>
-            <button onclick="populateRecurringDefaults()" style="width:100%; padding:8px; background:white; border:1px solid var(--border); border-radius:8px; font-size:9px; font-weight:700; color:var(--txt-sec);">Analizar Historial (3M)</button>
+            <div id="list-recurrentes"></div>
+            <button onclick="populateRecurringDefaults()" style="width:100%; padding:8px; background:white; border:1px solid var(--border); border-radius:8px; font-size:9px; font-weight:700; color:var(--txt-sec); margin-top:5px;">Analizar Historial (3M)</button>
         </div>
         
         <div class="settings-group">
@@ -318,6 +329,7 @@
                 <button onclick="executeRecurrentes()" style="padding:10px; background:white; border:1px solid var(--border); border-radius:8px; font-size:9px; font-weight:700;">Ejecutar Recurrentes</button>
                 <button onclick="openCloneModal()" style="padding:10px; background:white; border:1px solid var(--border); border-radius:8px; font-size:9px; font-weight:700;">Clonar Mes...</button>
                 <button onclick="forceSync()" style="grid-column:span 2; padding:10px; background:white; border:1px solid var(--border); border-radius:8px; font-size:10px; font-weight:700; color:var(--primary);">Sincronizar Nube (Forzado)</button>
+                <button id="btnCloseMonth" onclick="toggleMonthClose()" style="grid-column:span 2; padding:10px; background:#1E293B; border-radius:8px; font-size:9px; font-weight:700; color:white;">Cerrar Mes</button>
                 <button onclick="clearMonth()" style="grid-column:span 2; padding:10px; background:#FEF2F2; border:1px solid #FECACA; border-radius:8px; font-size:9px; font-weight:700; color:#EF4444;">Borrar Todo el Mes</button>
             </div>
         </div>
@@ -336,7 +348,7 @@
     <div class="sheet-box">
         <form id="txForm">
             <div style="display:flex; gap:10px;">
-                <input type="number" id="fAmount" class="big-inp" placeholder="0" step="0.01" required>
+                <input type="number" inputmode="decimal" id="fAmount" class="big-inp" placeholder="0" step="0.01" required>
                 <select id="fCurr" style="width:70px; margin-bottom:8px; background:#E2E8F0; border:none; border-radius:10px; font-weight:700; text-align:center; font-size:12px;">
                     <option value="ARS">ARS</option>
                     <option value="USD">USD</option>
@@ -349,6 +361,12 @@
                 <div class="tab-btn" id="seg-trf" onclick="setType('transfer')">Transf.</div>
             </div>
             <input type="hidden" id="fType" value="exp">
+            
+            <div id="splitWarning" style="display:none; background:#EEF2FF; border:1px dashed #6366F1; padding:8px; border-radius:8px; margin-bottom:10px; font-size:10px; color:#312E81;">
+                <i class="fas fa-info-circle"></i> <b>Es un Split (Dividido)</b><br>
+                Los items se preservarán. Solo puedes editar fecha, ejecutado y totales aquí.
+                <div id="splitList" style="margin-top:5px; padding-left:10px; font-size:9px; opacity:0.8;"></div>
+            </div>
 
             <div id="acc-selectors" style="display:flex; gap:10px; margin-bottom:10px;">
                  <div style="flex:1; display:none;" id="div-from">
@@ -438,7 +456,7 @@
                 </div>
                 <div style="flex:1;">
                      <span class="inp-lbl">SALDO INICIAL</span>
-                     <input type="number" id="accInit" class="sel-acc" style="margin:0;" placeholder="0" step="0.01">
+                     <input type="number" inputmode="decimal" id="accInit" class="sel-acc" style="margin:0;" placeholder="0" step="0.01">
                 </div>
             </div>
             <button type="submit" style="width:100%; padding:14px; background:var(--primary); color:white; font-weight:800; border-radius:10px; border:none; margin-bottom:8px;">GUARDAR CUENTA</button>
@@ -464,10 +482,9 @@
     const MONTHS = ["ENE","FEB","MAR","ABR","MAY","JUN","JUL","AGO","SEP","OCT","NOV","DIC"];
     const PALETTE = ['#3B82F6','#10B981','#F59E0B','#EF4444','#8B5CF6','#64748B','#EC4899','#14B8A6'];
 
-    // DATA STRUCTURE UPDATED TO MATCH DESKTOP
     let data = { 
         txs: [], 
-        accounts: [], // NEW
+        accounts: [],
         cats: { exp:['Esenciales','Varios'], inc:['Sueldo'] }, 
         concepts: {}, 
         recurrentes: [], 
@@ -479,15 +496,18 @@
     let drillCatExp = null, drillCatInc = null;
     let tempCat='', tempLink='';
     let currentDate = new Date(); currentDate.setDate(1);
-    let saveTimer = null; // Debounce for syncing
+    let saveTimer = null;
+
+    // VARIABLE PARA CONTROLAR EL BUG DEL SPLIT
+    let editingSplitChildren = null; 
 
     const fmt = (n) => n.toLocaleString('es-AR', {minimumFractionDigits: 0, maximumFractionDigits: 0});
     const fmtUsd = (n) => (n/1000).toFixed(1) + 'K';
 
     window.onload = () => { 
-        loadLocal(); // Load instantly from local
+        loadLocal(); 
         updateDateUI(); 
-        forceSync(); // Background refresh
+        forceSync(); 
     };
 
     function updateDateUI() { 
@@ -503,13 +523,15 @@
         saveData();
     }
     function getKey() { return `${currentDate.getFullYear()}-${(currentDate.getMonth()+1).toString().padStart(2,'0')}`; }
+    function isMonthClosed() { return !!data.closedMonths[getKey()]; }
 
     // --- CORE DATA LOGIC ---
     function loadLocal() {
-        const stored = localStorage.getItem('finance_mobile_data_v15'); // Changed key to ensure clean slate if needed
+        const stored = localStorage.getItem('finance_mobile_data_v16'); 
         if(stored) data = JSON.parse(stored);
-        if(!data.accounts) data.accounts = []; // Safety init
+        if(!data.accounts) data.accounts = [];
         if(!data.txs) data.txs = [];
+        if(!data.closedMonths) data.closedMonths = {};
     }
 
     function refreshAll() {
@@ -519,7 +541,14 @@
         document.getElementById('rateArs').value = rates.ARS; 
         document.getElementById('rateCop').value = rates.COP;
 
-        // Filter and Compute amounts
+        // CHECK MONTH CLOSED UI
+        const closed = isMonthClosed();
+        document.getElementById('lockIcon').style.display = closed ? 'inline-block' : 'none';
+        document.getElementById('btnCloseMonth').innerText = closed ? 'Reabrir Mes' : 'Cerrar Mes';
+        document.getElementById('btnCloseMonth').style.background = closed ? '#FFFFFF' : '#1E293B';
+        document.getElementById('btnCloseMonth').style.color = closed ? '#0F172A' : '#FFFFFF';
+        document.getElementById('btnCloseMonth').style.border = closed ? '1px solid #CBD5E1' : 'none';
+
         currentTxs = (data.txs || []).filter(t => !t.deletedAt && parseInt(t.date.split('-')[0]) === y && parseInt(t.date.split('-')[1]) === m);
         currentTxs.forEach(t => {
             if(!t.exec && t.curr && t.curr!=='ARS') {
@@ -539,8 +568,6 @@
     function renderDash() {
         const inc = currentTxs.filter(t=>t.type=='inc').reduce((a,b)=>a+b.amount,0);
         const exp = currentTxs.filter(t=>t.type=='exp').reduce((a,b)=>a+b.amount,0);
-        // Note: Transfers don't affect dashboard summary, only accounts
-        
         const bal = inc - exp;
         const rateArs = parseFloat(document.getElementById('rateArs').value)||1;
         
@@ -558,8 +585,17 @@
         const lInc = document.getElementById('list-inc'), lExp = document.getElementById('list-exp');
         lInc.innerHTML = ''; lExp.innerHTML = '';
 
+        // RESTORED RUNNING BALANCE (SUBTOTAL / CUENTA T)
+        let runningBal = 0;
+        const balMap = {};
         currentTxs.forEach(t => {
-            if(t.type === 'transfer') return; // Transfers don't go in dashboard lists
+            if(t.type === 'inc') runningBal += t.amount;
+            else if(t.type === 'exp') runningBal -= t.amount;
+            balMap[t.id] = runningBal;
+        });
+
+        currentTxs.forEach(t => {
+            if(t.type === 'transfer') return;
 
             const isInc = t.type === 'inc';
             const el = document.createElement('div');
@@ -574,10 +610,15 @@
                 if(parentInc) sourceTag = `<span class="source-tag"><i class="fas fa-link" style="font-size:8px;"></i> ${parentInc.desc}</span>`;
             }
 
-            // Splits display logic (if any exists from desktop)
+            // Subtotal logic restored
+            let qMagic = '';
+            if(!isInc) {
+                const currentGlobalBal = balMap[t.id];
+                qMagic = `<span class="magic-q ${currentGlobalBal>=0?'q-ok':'q-bad'}">Sub: $${fmt(currentGlobalBal)}</span>`;
+            }
+
             let splitBadge = (t.children && t.children.length) ? `<span class="cat-tag" style="background:#e0e7ff; color:#4338ca;">DIVIDIDO</span>` : '';
             
-            // Account Badge
             let accName = '';
             if(t.fromAccountId) { const a = data.accounts.find(x=>x.id==t.fromAccountId); if(a) accName = a.name; }
             else if(t.toAccountId) { const a = data.accounts.find(x=>x.id==t.toAccountId); if(a) accName = a.name; }
@@ -596,7 +637,8 @@
                         ${catDisplay} ${splitBadge} ${extraInfo}
                     </div>
                     <div style="display:flex; align-items:center; gap:8px;">
-                        <span>${t.date.split('-')[2]}</span>
+                        ${qMagic}
+                        <span style="margin-left:5px;">${t.date.split('-')[2]}</span>
                         <i class="fas fa-copy" style="color:#cbd5e1; font-size:10px;" onclick="event.stopPropagation(); cloneTx('${t.id}')"></i>
                     </div>
                 </div>
@@ -606,7 +648,7 @@
         filterExp();
     }
 
-    // --- NET WORTH LOGIC (PORTED FROM DESKTOP) ---
+    // --- NET WORTH LOGIC ---
     function renderNetWorth() {
         const rates = { ARS: parseFloat(document.getElementById('rateArs').value)||1200, COP: parseFloat(document.getElementById('rateCop').value)||3700 };
         const balances = computeBalancesAsOf(new Date().toISOString().split('T')[0], rates);
@@ -616,7 +658,6 @@
         
         let totalAssets = 0, totalLiabs = 0;
 
-        // Ensure we display accounts even if no transactions
         data.accounts.forEach(a => {
             const bal = balances[a.id] || 0;
             const balARS = (a.currency==='ARS') ? bal : (a.currency==='USD' ? bal * rates.ARS : (bal / rates.COP) * rates.ARS);
@@ -656,11 +697,10 @@
         data.accounts.forEach(a => { bal[a.id] = parseFloat(a.initBal)||0; });
         
         data.txs.filter(t => !t.deletedAt && t.date <= isoEnd).forEach(t => {
-            // Helper to convert tx amount to account currency
             const getAmtForAcc = (accId) => {
                 const acc = data.accounts.find(a=>a.id===accId);
                 if(!acc) return 0;
-                let txValInARS = t.amount; // Base is ARS
+                let txValInARS = t.amount; 
                 if(t.curr === 'USD') txValInARS = t.origAmt * rates.ARS;
                 else if(t.curr === 'COP') txValInARS = (t.origAmt / rates.COP) * rates.ARS;
 
@@ -674,7 +714,7 @@
             if(t.type === 'exp' && t.fromAccountId) bal[t.fromAccountId] -= getAmtForAcc(t.fromAccountId);
             if(t.type === 'transfer' && t.fromAccountId && t.toAccountId) {
                 bal[t.fromAccountId] -= getAmtForAcc(t.fromAccountId);
-                bal[t.toAccountId] += getAmtForAcc(t.toAccountId); // Simplified transfer logic
+                bal[t.toAccountId] += getAmtForAcc(t.toAccountId); 
             }
         });
         return bal;
@@ -686,7 +726,7 @@
         if(chartInstance) chartInstance.destroy();
         
         const labels = [], dataPoints = [];
-        let d = new Date(); d.setDate(1); d.setMonth(d.getMonth()-6); // Last 6 months
+        let d = new Date(); d.setDate(1); d.setMonth(d.getMonth()-6); 
         
         for(let i=0; i<7; i++) {
             const end = new Date(d.getFullYear(), d.getMonth()+1, 0).toISOString().split('T')[0];
@@ -723,7 +763,10 @@
     }
 
     // --- ACCOUNT MANAGEMENT ---
-    function openAccountSheet() { editAccId=null; document.getElementById('accForm').reset(); document.getElementById('btnDelAcc').style.display='none'; document.getElementById('sheetAcc').classList.add('open'); }
+    function openAccountSheet() { 
+        if(isMonthClosed()) return alert("Mes Cerrado");
+        editAccId=null; document.getElementById('accForm').reset(); document.getElementById('btnDelAcc').style.display='none'; document.getElementById('sheetAcc').classList.add('open'); 
+    }
     function closeAccSheet() { document.getElementById('sheetAcc').classList.remove('open'); }
     
     function saveAccount(e) {
@@ -741,6 +784,7 @@
         saveData(); closeAccSheet(); refreshAll();
     }
     function editAccount(id) {
+        if(isMonthClosed()) return alert("Mes Cerrado");
         const a = data.accounts.find(x=>x.id===id); if(!a) return;
         editAccId = id;
         document.getElementById('accName').value = a.name;
@@ -754,11 +798,16 @@
     function delAccount() { if(confirm('Borrar cuenta?')) { data.accounts = data.accounts.filter(x=>x.id!==editAccId); saveData(); closeAccSheet(); refreshAll(); } }
 
     // --- TRANSACTION FORM LOGIC ---
-    function openNewTx() { editId=null; resetForm(); openSheet(); }
+    function openNewTx() { 
+        if(isMonthClosed()) return alert("Mes Cerrado");
+        editId=null; editingSplitChildren=null; resetForm(); openSheet(); 
+    }
     function openSheet() { document.getElementById('sheet').classList.add('open'); }
     function closeSheet() { document.getElementById('sheet').classList.remove('open'); }
     function resetForm() {
         document.getElementById('txForm').reset(); document.getElementById('btnDel').style.display = 'none';
+        document.getElementById('splitWarning').style.display = 'none';
+        
         const now = new Date(); const y=currentDate.getFullYear(), m=(currentDate.getMonth()+1).toString().padStart(2,'0');
         const d=(y==now.getFullYear() && (currentDate.getMonth())==now.getMonth()) ? now.getDate().toString().padStart(2,'0') : '01';
         document.getElementById('fDate').value = `${y}-${m}-${d}`;
@@ -797,7 +846,6 @@
         if(t!=='transfer') renderCatChips(t);
     }
     
-    // --- BASIC LOGIC (Existing Mobile) ---
     function renderCatChips(type) {
         const c = document.getElementById('catChips'); c.innerHTML='';
         (data.cats[type]||[]).forEach(cat => {
@@ -835,12 +883,22 @@
         e.preventDefault();
         const type = document.getElementById('fType').value;
         let cat = document.getElementById('fCat').value; 
-        if(type!=='transfer' && !cat) return alert('Categoría?');
-        if(type==='transfer') cat = 'Transferencia';
+        
+        // Handling Split Save
+        if(editingSplitChildren) {
+             cat = "Múltiples"; // Force split category
+        } else {
+             if(type!=='transfer' && !cat) return alert('Categoría?');
+             if(type==='transfer') cat = 'Transferencia';
+        }
         
         let desc = document.getElementById('fConcept').value;
-        if(type!=='transfer' && (desc=='new'||!desc)) { desc=document.getElementById('fCustomDesc').value; if(desc && !data.concepts[cat].includes(desc)) data.concepts[cat].push(desc); }
+        if(type!=='transfer' && !editingSplitChildren && (desc=='new'||!desc)) { 
+            desc=document.getElementById('fCustomDesc').value; 
+            if(desc && !data.concepts[cat].includes(desc)) data.concepts[cat].push(desc); 
+        }
         if(type==='transfer') desc = 'Transferencia';
+        if(editingSplitChildren) desc = document.getElementById('fCustomDesc').value || '(Varios)';
 
         const origAmt = parseFloat(document.getElementById('fAmount').value);
         const curr = document.getElementById('fCurr').value;
@@ -855,25 +913,42 @@
             type: type, cat: cat, desc: desc,
             exec: document.getElementById('fExec').checked, linkId: document.getElementById('fLink').value || null,
             fromAccountId: document.getElementById('fFromAcc').value || null,
-            toAccountId: document.getElementById('fToAcc').value || null
+            toAccountId: document.getElementById('fToAcc').value || null,
+            children: editingSplitChildren || [] // CORRECCIÓN DEL BUG SPLIT
         };
         if(editId) { const i=data.txs.findIndex(x=>x.id==editId); if(i>-1) data.txs[i]=tx; } else data.txs.push(tx);
         saveData(); closeSheet();
     };
 
     function edit(id) {
+        if(isMonthClosed()) return alert("Mes Cerrado");
         editId=id; const t=data.txs.find(x=>x.id==id); if(!t)return;
         updateAccountSelects();
         document.getElementById('fAmount').value=t.origAmt||t.amount; document.getElementById('fCurr').value=t.curr||'ARS';
         document.getElementById('fDate').value=t.date; document.getElementById('fExec').checked=t.exec;
         document.getElementById('btnDel').style.display='block';
-        setType(t.type); 
         
-        if(t.type!=='transfer') {
-            tempCat=t.cat; document.getElementById('fCat').value=t.cat; renderCatChips(t.type);
-            document.getElementById('fConcept').value=t.desc; renderConChips(t.cat);
-            if(!data.concepts[t.cat]?.includes(t.desc)){ document.getElementById('fConcept').value='new'; document.getElementById('fCustomDesc').style.display='block'; document.getElementById('fCustomDesc').value=t.desc; }
-            tempLink=t.linkId||''; document.getElementById('fLink').value=tempLink; renderLinkChips();
+        // SPLIT HANDLING
+        editingSplitChildren = (t.children && t.children.length > 0) ? t.children : null;
+        
+        if(editingSplitChildren) {
+             document.getElementById('splitWarning').style.display = 'block';
+             document.getElementById('splitList').innerHTML = editingSplitChildren.map(c => `<div>- ${c.cat}: ${c.desc} ($${c.amount})</div>`).join('');
+             document.getElementById('div-cat').style.display='none';
+             document.getElementById('div-desc').style.display='block';
+             document.getElementById('conChips').innerHTML=''; 
+             document.getElementById('fCustomDesc').style.display='block';
+             document.getElementById('fCustomDesc').value = t.desc;
+             setType('exp');
+        } else {
+             document.getElementById('splitWarning').style.display = 'none';
+             setType(t.type); 
+             if(t.type!=='transfer') {
+                tempCat=t.cat; document.getElementById('fCat').value=t.cat; renderCatChips(t.type);
+                document.getElementById('fConcept').value=t.desc; renderConChips(t.cat);
+                if(!data.concepts[t.cat]?.includes(t.desc)){ document.getElementById('fConcept').value='new'; document.getElementById('fCustomDesc').style.display='block'; document.getElementById('fCustomDesc').value=t.desc; }
+                tempLink=t.linkId||''; document.getElementById('fLink').value=tempLink; renderLinkChips();
+            }
         }
         
         if(t.fromAccountId) document.getElementById('fFromAcc').value = t.fromAccountId;
@@ -882,7 +957,7 @@
     }
     function delTx(){ if(confirm('Eliminar?')){ data.txs.find(x=>x.id==editId).deletedAt=Date.now(); saveData(); closeSheet(); }}
     
-    // --- ALLOC, STATS, SETTINGS (KEPT AS IS) ---
+    // --- ALLOC, STATS, SETTINGS ---
     function clearSearch(type) {
         if(type === 'exp') { document.getElementById('searchBar').value = ''; filterExp(); } 
         else { document.getElementById('allocSearch').value = ''; renderAlloc(); }
@@ -891,8 +966,9 @@
         const term = document.getElementById('searchBar').value.toLowerCase();
         document.querySelectorAll('#list-exp .tx-card').forEach(r => r.style.display = r.innerText.toLowerCase().includes(term) ? 'block' : 'none');
     }
-    function unassignAll() { if(confirm("¿Desvincular TODOS?")) { currentTxs.forEach(t => { if(t.type === 'exp') t.linkId = null; }); saveData(); }}
+    function unassignAll() { if(isMonthClosed())return; if(confirm("¿Desvincular TODOS?")) { currentTxs.forEach(t => { if(t.type === 'exp') t.linkId = null; }); saveData(); }}
     function autoAssign() {
+        if(isMonthClosed())return;
         if(!confirm("¿Auto-Asignar?")) return;
         let incomes = currentTxs.filter(t => t.type === 'inc').map(i => {
             const assigned = currentTxs.filter(e => e.type === 'exp' && e.linkId == i.id).reduce((a,b)=>a+b.amount,0);
@@ -926,6 +1002,7 @@
             let childHTML = '';
             (term ? filteredSubs : subs).forEach(s => {
                 const day = s.date.split('-')[2];
+                // CORRECCION TACHADO
                 childHTML += `<div class="child-row ${s.exec?'executed':''}" onclick="edit('${s.id}')"><span>${s.desc} <span style="font-size:8px; color:var(--txt-sec);">d-${day}</span></span><span>$${fmt(s.amount)}</span></div>`;
             });
             if(!subs.length) childHTML = '<div class="child-row" style="font-style:italic; color:#cbd5e1; cursor:default;">Sin gastos</div>';
@@ -991,24 +1068,60 @@
     }
     function resetChart(type) { if(type === 'exp') drillCatExp = null; if(type === 'inc') drillCatInc = null; renderStats(); }
 
-    function renderSettings() { renderRecurrentesList(); renderAdminTree(); }
+    // --- RECURRENTES UI CORREGIDA ---
     function renderRecurrentesList() {
         const c = document.getElementById('list-recurrentes'); c.innerHTML='';
         if(!data.recurrentes.length) { c.innerHTML='<div style="text-align:center; color:#cbd5e1; font-size:9px;">Sin datos</div>'; return; }
-        data.recurrentes.forEach((r,i) => {
-            const d=document.createElement('div'); d.className='tx-card'; 
-            d.style.marginBottom='5px'; d.style.padding='15px'; 
-            d.innerHTML=`<div style="display:flex;justify-content:space-between;width:100%"><span>${r.desc}</span><div style="display:flex; gap:8px;"><b>$${fmt(r.amount)}</b><i class="fas fa-times" style="color:#ef4444;" onclick="event.stopPropagation(); data.recurrentes.splice(${i},1);saveData();renderSettings()"></i></div></div>`;
-            d.onclick=()=>{ const newAmt = prompt('Nuevo monto:', r.amount); if(newAmt) { data.recurrentes[i].amount = parseFloat(newAmt); saveData(); renderSettings(); } };
-            c.appendChild(d);
+        
+        // Agrupar por Categoría para que se vea igual que el arbol
+        const groups = {};
+        data.recurrentes.forEach((r, idx) => {
+             const cat = r.cat || 'Varios';
+             if(!groups[cat]) groups[cat] = [];
+             groups[cat].push({ ...r, idx }); // guardamos idx original para borrar
+        });
+
+        Object.keys(groups).forEach(cat => {
+            const node = document.createElement('div'); node.className='tree-node';
+            const items = groups[cat];
+            
+            let itemsHtml = items.map(item => `
+                <div style="display:flex; justify-content:space-between; padding:4px 8px; border-bottom:1px solid #f1f5f9; font-size:10px; align-items:center;">
+                    <span onclick="editRecurrente(${item.idx})">${item.desc}</span>
+                    <div style="display:flex; gap:8px;">
+                        <b>$${fmt(item.amount)}</b>
+                        <i class="fas fa-trash" style="color:#cbd5e1; cursor:pointer;" onclick="delRecurrente(${item.idx})"></i>
+                    </div>
+                </div>
+            `).join('');
+
+            node.innerHTML = `
+                <div class="tree-head" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display=='block'?'none':'block'">
+                    <span>${cat} <span style="font-weight:400; color:#94a3b8;">(${items.length})</span></span>
+                </div>
+                <div class="tree-body" style="display:block; padding:0;">${itemsHtml}</div>
+            `;
+            c.appendChild(node);
         });
     }
     function addRecurrenteUI() {
+        if(isMonthClosed())return;
         const desc = prompt("Nombre:"); if(!desc) return;
         const amount = prompt("Monto:"); if(!amount) return;
         data.recurrentes.push({ desc: desc, amount: parseFloat(amount), cat: 'Esenciales', type: 'exp' });
         saveData(); renderSettings();
     }
+    function editRecurrente(i) {
+        if(isMonthClosed())return;
+        const r = data.recurrentes[i];
+        const newAmt = prompt('Nuevo monto para '+r.desc+':', r.amount);
+        if(newAmt) { data.recurrentes[i].amount = parseFloat(newAmt); saveData(); renderSettings(); }
+    }
+    function delRecurrente(i) {
+        if(isMonthClosed())return;
+        if(confirm('Borrar recurrente?')) { data.recurrentes.splice(i,1); saveData(); renderSettings(); }
+    }
+
     function renderAdminTree() {
         const c = document.getElementById('admin-tree'); c.innerHTML='';
         [{k:'exp'},{k:'inc'}].forEach(type => {
@@ -1020,10 +1133,11 @@
             });
         });
     }
-    function delCat(t,c){ if(confirm('Borrar?')) { data.cats[t]=data.cats[t].filter(x=>x!==c); delete data.concepts[c]; saveData(); renderSettings(); }}
-    function delCon(c,n){ if(confirm('Borrar?')) { data.concepts[c]=data.concepts[c].filter(x=>x!==n); saveData(); renderSettings(); }}
-    function addCon(c){ const n=prompt('Nueva:'); if(n){ if(!data.concepts[c])data.concepts[c]=[]; data.concepts[c].push(n); saveData(); renderSettings(); }}
+    function delCat(t,c){ if(isMonthClosed())return; if(confirm('Borrar?')) { data.cats[t]=data.cats[t].filter(x=>x!==c); delete data.concepts[c]; saveData(); renderSettings(); }}
+    function delCon(c,n){ if(isMonthClosed())return; if(confirm('Borrar?')) { data.concepts[c]=data.concepts[c].filter(x=>x!==n); saveData(); renderSettings(); }}
+    function addCon(c){ if(isMonthClosed())return; const n=prompt('Nueva:'); if(n){ if(!data.concepts[c])data.concepts[c]=[]; data.concepts[c].push(n); saveData(); renderSettings(); }}
     function executeRecurrentes() {
+        if(isMonthClosed())return;
         const txt = document.getElementById('monthTxt').innerText; if(!confirm(`¿Ejecutar en ${txt}?`)) return;
         const y=currentDate.getFullYear(), m=currentDate.getMonth()+1; let c=0;
         data.recurrentes.forEach(r=>{
@@ -1034,8 +1148,18 @@
         alert(c>0 ? `Generados ${c}` : 'Ya estaban'); saveData();
     }
     
-    // --- UTILS ---
+    // --- UTILS & MONTH CLOSE ---
+    function toggleMonthClose() {
+        const key = getKey();
+        if(data.closedMonths[key]) {
+            if(confirm("¿Reabrir mes?")) { delete data.closedMonths[key]; saveData(); }
+        } else {
+            if(confirm("¿Cerrar mes? No podrás editar.")) { data.closedMonths[key] = true; saveData(); }
+        }
+    }
+
     function cloneTx(id) {
+        if(isMonthClosed()) return alert("Mes Cerrado");
         const t = data.txs.find(x => x.id == id); if(!t) return;
         if(!confirm("¿Clonar " + t.desc + "?")) return;
         const currentY = currentDate.getFullYear();
@@ -1045,6 +1169,7 @@
         data.txs.push(newTx); saveData();
     }
     function openCloneModal() {
+        if(isMonthClosed()) return alert("Mes Cerrado");
         const sel = document.getElementById('selCloneSrc'); sel.innerHTML = '';
         const months = new Set(); data.txs.forEach(t => { if(!t.deletedAt) months.add(t.date.slice(0, 7)); });
         Array.from(months).sort().reverse().forEach(m => { const opt = document.createElement('option'); opt.value = m; opt.innerText = m; sel.appendChild(opt); });
@@ -1059,7 +1184,10 @@
         srcTxs.filter(t => t.type === 'exp').forEach(t => { newTxs.push({...t, id: Date.now() + Math.random(), date: `${targetY}-${targetM}-01`, exec: false, linkId: t.linkId ? mapIds[t.linkId] : null }); });
         data.txs.push(...newTxs); saveData(); document.getElementById('modalClone').classList.remove('open');
     }
-    function clearMonth(){ if(confirm('¿Borrar TODO este mes?')) { const y=currentDate.getFullYear(), m=currentDate.getMonth()+1; data.txs.forEach(t=>{ if(parseInt(t.date.split('-')[0])==y && parseInt(t.date.split('-')[1])==m) t.deletedAt=Date.now(); }); saveData(); }}
+    function clearMonth(){ 
+        if(isMonthClosed()) return alert("Mes Cerrado");
+        if(confirm('¿Borrar TODO este mes?')) { const y=currentDate.getFullYear(), m=currentDate.getMonth()+1; data.txs.forEach(t=>{ if(parseInt(t.date.split('-')[0])==y && parseInt(t.date.split('-')[1])==m) t.deletedAt=Date.now(); }); saveData(); }
+    }
     function nav(v) {
         document.querySelectorAll('.view-section').forEach(e=>e.classList.remove('active'));
         document.querySelectorAll('.nav-btn').forEach(e=>e.classList.remove('active'));
@@ -1075,25 +1203,25 @@
         document.getElementById('tab-alloc').className=`tab-btn ${t=='alloc'?'active':''}`;
     }
     
-    // --- SYNC ENGINE REWRITTEN ---
+    // --- SYNC ENGINE ---
     async function forceSync() {
         const syncDot = document.getElementById('syncDot');
-        syncDot.className = 'sync-dot sync-spin'; // Animation start
+        syncDot.className = 'sync-dot sync-spin'; 
         
         try { 
-            // Anti-Cache mechanism: append timestamp
             const r = await fetch(API_URL + '?t=' + Date.now(), { cache: "no-store" }); 
             const d = await r.json(); 
             
             if(d) { 
                 data.txs = d.txs || []; 
-                data.accounts = d.accounts || []; // Sync accounts
+                data.accounts = d.accounts || [];
                 data.cats = d.cats || data.cats; 
                 data.concepts = d.concepts || data.concepts; 
                 data.recurrentes = d.recurrentes || []; 
                 data.monthlyRates = d.monthlyRates || {}; 
+                data.closedMonths = d.closedMonths || {};
                 
-                localStorage.setItem('finance_mobile_data_v15', JSON.stringify(data));
+                localStorage.setItem('finance_mobile_data_v16', JSON.stringify(data));
                 refreshAll(); 
                 
                 syncDot.className = 'sync-dot';
@@ -1107,13 +1235,12 @@
     }
 
     function saveData() {
-        localStorage.setItem('finance_mobile_data_v15', JSON.stringify(data));
+        localStorage.setItem('finance_mobile_data_v16', JSON.stringify(data));
         refreshAll(); 
 
         const syncDot = document.getElementById('syncDot');
         syncDot.style.background='#F59E0B'; 
 
-        // Debounce to prevent flooding
         if(saveTimer) clearTimeout(saveTimer);
         saveTimer = setTimeout(() => {
             fetch(API_URL, {
@@ -1127,7 +1254,7 @@
                  console.error(e);
                  syncDot.style.background='#EF4444'; 
             });
-        }, 500); // 0.5s delay
+        }, 500); 
     }
 </script>
 </body>
