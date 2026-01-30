@@ -521,12 +521,15 @@
 
     // --- CORE DATA LOGIC ---
     function loadLocal() {
-        const stored = localStorage.getItem('finance_mobile_data_v17'); 
+        const stored = localStorage.getItem('finance_mobile_data_v18'); 
         if(stored) data = JSON.parse(stored);
+        
+        // Inicialización forzada si datos antiguos no tienen nuevas estructuras
         if(!data.accounts) data.accounts = [];
         if(!data.txs) data.txs = [];
         if(!data.closedMonths) data.closedMonths = {};
-        if(!data.accountCats) data.accountCats = ['Efectivo', 'Banco', 'Inversiones', 'Cripto', 'Tarjeta', 'Otro'];
+        if(!data.accountCats || !data.accountCats.length) data.accountCats = ['Efectivo', 'Banco', 'Inversiones', 'Cripto', 'Tarjeta', 'Otro'];
+        if(!data.recurrentes) data.recurrentes = [];
     }
 
     function refreshAll() {
@@ -705,7 +708,6 @@
             const getAmtForAcc = (accId) => {
                 const acc = data.accounts.find(a=>a.id===accId);
                 if(!acc) return 0;
-                // Si la cuenta no existía en fecha de la transaccion (caso raro pero posible por error)
                 if(acc.dateCreated && acc.dateCreated > t.date) return 0;
 
                 let txValInARS = t.amount; 
@@ -742,7 +744,6 @@
             let net = 0;
             data.accounts.forEach(a => {
                 let v = bals[a.id];
-                // Normalizar todo a USD para la grafica histórica (estándar internacional)
                 let vUSD = (a.currency==='USD') ? v : (a.currency==='ARS' ? v/rates.ARS : v/rates.COP);
                 if(a.kind==='liability') net -= vUSD; else net += vUSD;
             });
@@ -775,11 +776,8 @@
     function openAccountSheet() { 
         if(isMonthClosed()) return alert("Mes Cerrado");
         editAccId=null; document.getElementById('accForm').reset(); document.getElementById('btnDelAcc').style.display='none'; 
-        
-        // Render Account Types from Config
         const sel = document.getElementById('accType'); sel.innerHTML='';
         data.accountCats.forEach(c => { sel.innerHTML += `<option value="${c}">${c}</option>`; });
-        
         document.getElementById('accDate').value = new Date().toISOString().split('T')[0];
         document.getElementById('sheetAcc').classList.add('open'); 
     }
@@ -794,7 +792,7 @@
             kind: document.getElementById('accKind').value,
             currency: document.getElementById('accCurr').value,
             initBal: parseFloat(document.getElementById('accInit').value)||0,
-            dateCreated: document.getElementById('accDate').value // GUuardar fecha creacion
+            dateCreated: document.getElementById('accDate').value 
         };
         if(editAccId) { const i=data.accounts.findIndex(x=>x.id==editAccId); data.accounts[i]=acc; }
         else data.accounts.push(acc);
@@ -804,8 +802,6 @@
         if(isMonthClosed()) return alert("Mes Cerrado");
         const a = data.accounts.find(x=>x.id===id); if(!a) return;
         editAccId = id;
-        
-        // Render types
         const sel = document.getElementById('accType'); sel.innerHTML='';
         data.accountCats.forEach(c => { sel.innerHTML += `<option value="${c}">${c}</option>`; });
         
@@ -1162,6 +1158,32 @@
         if(isMonthClosed())return;
         if(confirm('Borrar recurrente?')) { data.recurrentes.splice(i,1); saveData(); renderSettings(); }
     }
+    
+    function populateRecurringDefaults() {
+        if(!confirm("¿Analizar 3 meses?")) return;
+        const limit = new Date(); limit.setDate(limit.getDate() - 90);
+        const isoLimit = limit.toISOString().split('T')[0];
+        const recent = data.txs.filter(t => !t.deletedAt && t.type === 'exp' && t.date >= isoLimit);
+        
+        const analysis = {};
+        recent.forEach(t => { 
+            const d = t.desc.trim(); 
+            if(!analysis[d]) analysis[d] = { count: 0, lastAmt: 0, cat: t.cat, dates: new Set() }; 
+            analysis[d].count++; analysis[d].lastAmt = t.origAmt || t.amount; analysis[d].cat = t.cat; analysis[d].dates.add(t.date.substring(0, 7)); 
+        });
+        
+        let added = 0;
+        Object.entries(analysis).forEach(([desc, info]) => {
+            const exists = data.recurrentes.some(r => r.desc.toLowerCase() === desc.toLowerCase());
+            if((info.dates.size >= 2 || info.count >= 3) && !exists) { 
+                data.recurrentes.push({ desc: desc, amount: info.lastAmt, cat: info.cat, type: 'exp' }); 
+                added++; 
+            }
+        });
+        alert(`Análisis finalizado: ${added} gastos recurrentes nuevos encontrados.`);
+        saveData(); 
+        renderSettings();
+    }
 
     function renderAdminTree() {
         const c = document.getElementById('admin-tree'); c.innerHTML='';
@@ -1284,7 +1306,7 @@
                 data.closedMonths = d.closedMonths || {};
                 data.accountCats = d.accountCats || ['Efectivo', 'Banco', 'Inversiones', 'Cripto', 'Tarjeta', 'Otro'];
                 
-                localStorage.setItem('finance_mobile_data_v17', JSON.stringify(data));
+                localStorage.setItem('finance_mobile_data_v18', JSON.stringify(data));
                 refreshAll(); 
                 
                 syncDot.className = 'sync-dot';
@@ -1298,7 +1320,7 @@
     }
 
     function saveData() {
-        localStorage.setItem('finance_mobile_data_v17', JSON.stringify(data));
+        localStorage.setItem('finance_mobile_data_v18', JSON.stringify(data));
         refreshAll(); 
 
         const syncDot = document.getElementById('syncDot');
