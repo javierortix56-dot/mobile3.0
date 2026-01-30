@@ -255,11 +255,11 @@
 
     <div id="view-networth" class="view-section" style="padding:10px; overflow-y:auto; background:#F1F5F9;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-            <h3 style="margin:0; font-size:14px; font-weight:800; color:var(--primary);">Patrimonio</h3>
+            <h3 style="margin:0; font-size:14px; font-weight:800; color:var(--primary);">Patrimonio (USD)</h3>
             <button onclick="openAccountSheet()" style="background:var(--primary); color:white; border:none; border-radius:6px; padding:6px 10px; font-size:10px; font-weight:700;">+ Cuenta</button>
         </div>
         
-        <div class="chart-card" style="margin-bottom:15px; height:200px;">
+        <div class="chart-card" style="margin-bottom:15px; height:240px;">
             <div class="chart-header"><span>Evolución (USD)</span></div>
             <div class="chart-line-body" style="height:100%;">
                 <canvas id="chartNetWorth"></canvas>
@@ -268,11 +268,11 @@
 
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:15px;">
              <div class="nw-card" style="flex-direction:column; align-items:flex-start; margin:0;">
-                 <span style="font-size:9px; font-weight:700; color:var(--txt-sec); text-transform:uppercase;">Activos</span>
+                 <span style="font-size:9px; font-weight:700; color:var(--txt-sec); text-transform:uppercase;">Activos Totales</span>
                  <span style="font-size:16px; font-weight:800; color:#059669;" id="nw-assets">$0</span>
              </div>
              <div class="nw-card" style="flex-direction:column; align-items:flex-start; margin:0;">
-                 <span style="font-size:9px; font-weight:700; color:var(--txt-sec); text-transform:uppercase;">Pasivos</span>
+                 <span style="font-size:9px; font-weight:700; color:var(--txt-sec); text-transform:uppercase;">Pasivos Totales</span>
                  <span style="font-size:16px; font-weight:800; color:#DC2626;" id="nw-liabs">$0</span>
              </div>
         </div>
@@ -558,7 +558,6 @@
         
         renderDash(); 
         renderAlloc();
-        // AQUI ESTABA EL ERROR: Llamamos a renderSettings() explícitamente si estamos en la vista
         if(document.getElementById('view-stats').classList.contains('active')) renderStats();
         if(document.getElementById('view-settings').classList.contains('active')) renderSettings();
         if(document.getElementById('view-networth').classList.contains('active')) renderNetWorth();
@@ -644,10 +643,12 @@
         filterExp();
     }
 
-    // --- NET WORTH LOGIC ---
+    // --- NET WORTH LOGIC (FIXED: USD Only, Historical, Stacked) ---
     function renderNetWorth() {
         const rates = { ARS: parseFloat(document.getElementById('rateArs').value)||1200, COP: parseFloat(document.getElementById('rateCop').value)||3700 };
-        const currentEnd = new Date(currentDate.getFullYear(), currentDate.getMonth()+1, 0).toISOString().split('T')[0];
+        // Use today's date for current balance, independent of month selector
+        const today = new Date();
+        const currentEnd = new Date(today.getFullYear(), today.getMonth()+1, 0).toISOString().split('T')[0];
         const balances = computeBalancesAsOf(currentEnd, rates);
         
         const list = document.getElementById('list-accounts');
@@ -659,9 +660,13 @@
             if(a.dateCreated && a.dateCreated > currentEnd) return;
 
             const bal = balances[a.id] || 0;
-            const balARS = (a.currency==='ARS') ? bal : (a.currency==='USD' ? bal * rates.ARS : (bal / rates.COP) * rates.ARS);
+            // Force USD Conversion for Display
+            let balUSD = 0;
+            if(a.currency === 'USD') balUSD = bal;
+            else if(a.currency === 'ARS') balUSD = bal / rates.ARS;
+            else if(a.currency === 'COP') balUSD = (bal / rates.COP);
             
-            if(a.kind === 'asset') totalAssets += balARS; else totalLiabs += balARS;
+            if(a.kind === 'asset') totalAssets += balUSD; else totalLiabs += balUSD;
 
             const icon = a.kind === 'asset' ? 'fa-arrow-up' : 'fa-arrow-down';
             const colorClass = a.kind === 'asset' ? 'nw-green' : 'nw-red';
@@ -678,8 +683,8 @@
                     </div>
                 </div>
                 <div class="nw-val">
-                    <div class="nw-amt">${a.currency} ${fmt(bal)}</div>
-                    ${a.currency!=='ARS' ? `<div class="nw-native">≈ $${fmt(balARS)}</div>` : ''}
+                    <div class="nw-amt">USD ${fmt(balUSD)}</div>
+                    ${a.currency!=='USD' ? `<div class="nw-native">${fmt(bal)} ${a.currency}</div>` : ''}
                 </div>
             `;
             list.appendChild(el);
@@ -732,378 +737,80 @@
         const chartInstance = Chart.getChart(cvs);
         if(chartInstance) chartInstance.destroy();
         
-        const labels = [], dataPoints = [];
-        let d = new Date(); d.setDate(1); d.setMonth(d.getMonth()-6); 
+        const labels = [];
+        // Map account types to datasets
+        const types = data.accountCats || ['Efectivo', 'Banco', 'Inversiones', 'Cripto', 'Tarjeta', 'Otro'];
+        const datasetsMap = {};
         
-        for(let i=0; i<7; i++) {
+        types.forEach(t => datasetsMap[t] = []);
+        datasetsMap['Pasivos'] = []; // For liabilities line down
+
+        // Historical Calculation (Last 6 months from TODAY)
+        let d = new Date(); 
+        d.setDate(1); 
+        d.setMonth(d.getMonth()-5); // Start 5 months ago
+        
+        for(let i=0; i<6; i++) {
             const end = new Date(d.getFullYear(), d.getMonth()+1, 0).toISOString().split('T')[0];
             const bals = computeBalancesAsOf(end, rates);
-            let net = 0;
+            
+            // Initialize sums for this month
+            const sums = {}; types.forEach(t => sums[t]=0); sums['Pasivos']=0;
+
             data.accounts.forEach(a => {
                 let v = bals[a.id];
-                let vUSD = (a.currency==='USD') ? v : (a.currency==='ARS' ? v/rates.ARS : v/rates.COP);
-                if(a.kind==='liability') net -= vUSD; else net += vUSD;
+                // Convert everything to USD
+                let vUSD = 0;
+                if(a.currency === 'USD') vUSD = v;
+                else if(a.currency === 'ARS') vUSD = v / rates.ARS;
+                else if(a.currency === 'COP') vUSD = v / rates.COP; // Using ARS rate as base, but simplified here
+
+                if(a.kind === 'liability') {
+                    sums['Pasivos'] -= vUSD; // Negative for liabilities
+                } else {
+                    const t = a.type || 'Otro';
+                    sums[t] = (sums[t]||0) + vUSD;
+                }
             });
+
             labels.push(MONTHS[d.getMonth()]);
-            dataPoints.push(net);
+            types.forEach(t => datasetsMap[t].push(sums[t]));
+            datasetsMap['Pasivos'].push(sums['Pasivos']);
+
             d.setMonth(d.getMonth()+1);
         }
 
+        const datasets = types.map((t, i) => ({
+            label: t,
+            data: datasetsMap[t],
+            backgroundColor: PALETTE[i % PALETTE.length],
+            stack: 'Stack 0'
+        }));
+        
+        // Add Liabilities as Red bars going down
+        datasets.push({
+            label: 'Pasivos',
+            data: datasetsMap['Pasivos'],
+            backgroundColor: '#EF4444',
+            stack: 'Stack 0'
+        });
+
         new Chart(cvs, {
-            type: 'line',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Patrimonio (USD)',
-                    data: dataPoints,
-                    borderColor: '#10B981',
-                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                    borderWidth: 2, fill: true, tension: 0.3
-                }]
-            },
+            type: 'bar',
+            data: { labels: labels, datasets: datasets },
             options: { 
                 responsive: true, maintainAspectRatio: false, 
+                interaction: { mode: 'index', intersect: false },
                 plugins: { legend: { display: false } },
-                scales: { x: { grid: { display:false } }, y: { ticks: { callback: v => parseInt(v/1000)+'k' } } }
+                scales: { 
+                    x: { grid: { display:false }, stacked: true }, 
+                    y: { stacked: true, ticks: { callback: v => parseInt(v/1000)+'k' } } 
+                }
             }
         });
     }
 
-    // --- ACCOUNT MANAGEMENT ---
-    function openAccountSheet() { 
-        if(isMonthClosed()) return alert("Mes Cerrado");
-        editAccId=null; document.getElementById('accForm').reset(); document.getElementById('btnDelAcc').style.display='none'; 
-        const sel = document.getElementById('accType'); sel.innerHTML='';
-        data.accountCats.forEach(c => { sel.innerHTML += `<option value="${c}">${c}</option>`; });
-        document.getElementById('accDate').value = new Date().toISOString().split('T')[0];
-        document.getElementById('sheetAcc').classList.add('open'); 
-    }
-    function closeAccSheet() { document.getElementById('sheetAcc').classList.remove('open'); }
-    
-    function saveAccount(e) {
-        e.preventDefault();
-        const acc = {
-            id: editAccId || 'acc_'+Date.now(),
-            name: document.getElementById('accName').value,
-            type: document.getElementById('accType').value,
-            kind: document.getElementById('accKind').value,
-            currency: document.getElementById('accCurr').value,
-            initBal: parseFloat(document.getElementById('accInit').value)||0,
-            dateCreated: document.getElementById('accDate').value 
-        };
-        if(editAccId) { const i=data.accounts.findIndex(x=>x.id==editAccId); data.accounts[i]=acc; }
-        else data.accounts.push(acc);
-        saveData(); closeAccSheet(); refreshAll();
-    }
-    function editAccount(id) {
-        if(isMonthClosed()) return alert("Mes Cerrado");
-        const a = data.accounts.find(x=>x.id===id); if(!a) return;
-        editAccId = id;
-        const sel = document.getElementById('accType'); sel.innerHTML='';
-        data.accountCats.forEach(c => { sel.innerHTML += `<option value="${c}">${c}</option>`; });
-        
-        document.getElementById('accName').value = a.name;
-        document.getElementById('accType').value = a.type;
-        document.getElementById('accKind').value = a.kind;
-        document.getElementById('accCurr').value = a.currency;
-        document.getElementById('accInit').value = a.initBal;
-        document.getElementById('accDate').value = a.dateCreated || new Date().toISOString().split('T')[0];
-
-        document.getElementById('btnDelAcc').style.display='block';
-        document.getElementById('sheetAcc').classList.add('open');
-    }
-    function delAccount() { if(confirm('Borrar cuenta?')) { data.accounts = data.accounts.filter(x=>x.id!==editAccId); saveData(); closeAccSheet(); refreshAll(); } }
-
-    // --- TRANSACTION FORM LOGIC ---
-    function openNewTx() { 
-        if(isMonthClosed()) return alert("Mes Cerrado");
-        editId=null; editingSplitChildren=null; resetForm(); openSheet(); 
-    }
-    function openSheet() { document.getElementById('sheet').classList.add('open'); }
-    function closeSheet() { document.getElementById('sheet').classList.remove('open'); }
-    function resetForm() {
-        document.getElementById('txForm').reset(); document.getElementById('btnDel').style.display = 'none';
-        document.getElementById('splitWarning').style.display = 'none';
-        
-        const now = new Date(); const y=currentDate.getFullYear(), m=(currentDate.getMonth()+1).toString().padStart(2,'0');
-        const d=(y==now.getFullYear() && (currentDate.getMonth())==now.getMonth()) ? now.getDate().toString().padStart(2,'0') : '01';
-        document.getElementById('fDate').value = `${y}-${m}-${d}`;
-        updateAccountSelects();
-        setType('exp'); tempCat=''; tempLink=''; renderLinkChips();
-    }
-    function updateAccountSelects() {
-        const from = document.getElementById('fFromAcc'); const to = document.getElementById('fToAcc');
-        from.innerHTML = '<option value="">-- Seleccionar --</option>'; 
-        to.innerHTML = '<option value="">-- Seleccionar --</option>';
-        data.accounts.forEach(a => {
-            const opt = `<option value="${a.id}">${a.name} (${a.currency})</option>`;
-            from.innerHTML += opt; to.innerHTML += opt;
-        });
-    }
-
-    function setType(t) {
-        document.getElementById('fType').value = t;
-        document.getElementById('seg-exp').className = `tab-btn ${t=='exp'?'active':''}`;
-        document.getElementById('seg-inc').className = `tab-btn ${t=='inc'?'active':''}`;
-        document.getElementById('seg-trf').className = `tab-btn ${t=='transfer'?'active':''}`;
-        
-        const divCat = document.getElementById('div-cat');
-        const divDesc = document.getElementById('div-desc');
-        const linkSec = document.getElementById('linkSection');
-        const divFrom = document.getElementById('div-from');
-        const divTo = document.getElementById('div-to');
-
-        divCat.style.display = t=='transfer' ? 'none' : 'block';
-        divDesc.style.display = t=='transfer' ? 'block' : 'block';
-        linkSec.style.display = t=='exp' ? 'block' : 'none';
-        
-        divFrom.style.display = (t=='exp'||t=='transfer') ? 'block' : 'none';
-        divTo.style.display = (t=='inc'||t=='transfer') ? 'block' : 'none';
-
-        if(t!=='transfer') renderCatChips(t);
-    }
-    
-    function renderCatChips(type) {
-        const c = document.getElementById('catChips'); c.innerHTML='';
-        (data.cats[type]||[]).forEach(cat => {
-            const el = document.createElement('div'); el.className=`chip ${tempCat==cat?'active':''}`; el.innerText=cat;
-            el.onclick=()=>{ tempCat=cat; document.getElementById('fCat').value=cat; renderCatChips(type); renderConChips(cat); };
-            c.appendChild(el);
-        });
-        const add = document.createElement('div'); add.className='chip'; add.innerHTML='<i class="fas fa-plus"></i>';
-        add.onclick=()=>{ const n=prompt('Nueva:'); if(n){ if(!data.cats[type])data.cats[type]=[]; data.cats[type].push(n); data.concepts[n]=[]; saveData(); renderCatChips(type); }};
-        c.appendChild(add);
-        if(tempCat && (data.cats[type]||[]).includes(tempCat)) renderConChips(tempCat); else document.getElementById('conChips').innerHTML='';
-    }
-    function renderConChips(cat) {
-        const c = document.getElementById('conChips'); c.innerHTML='';
-        (data.concepts[cat]||[]).forEach(con => {
-            const el=document.createElement('div'); el.className=`chip ${document.getElementById('fConcept').value==con?'active':''}`; el.innerText=con;
-            el.onclick=()=>{ document.getElementById('fConcept').value=con; document.getElementById('fCustomDesc').style.display='none'; renderConChips(cat); };
-            c.appendChild(el);
-        });
-        const add=document.createElement('div'); add.className='chip'; add.innerText='...';
-        add.onclick=()=>{ document.getElementById('fConcept').value='new'; document.getElementById('fCustomDesc').style.display='block'; document.getElementById('fCustomDesc').focus(); renderConChips(cat); };
-        c.appendChild(add);
-    }
-    function renderLinkChips() {
-        const c=document.getElementById('linkChips'); c.innerHTML='';
-        const def=document.createElement('div'); def.className=`chip ${!tempLink?'active':''}`; def.innerText='Ninguno';
-        def.onclick=()=>{tempLink=''; document.getElementById('fLink').value=''; renderLinkChips();}; c.appendChild(def);
-        currentTxs.filter(t=>t.type=='inc').forEach(i=>{
-            const el=document.createElement('div'); el.className=`chip ${tempLink==i.id?'active':''}`; el.innerText=i.desc;
-            el.onclick=()=>{tempLink=i.id; document.getElementById('fLink').value=i.id; renderLinkChips();}; c.appendChild(el);
-        });
-    }
-
-    document.getElementById('txForm').onsubmit = (e) => {
-        e.preventDefault();
-        const type = document.getElementById('fType').value;
-        let cat = document.getElementById('fCat').value; 
-        
-        if(editingSplitChildren) {
-             cat = "Múltiples";
-        } else {
-             if(type!=='transfer' && !cat) return alert('Categoría?');
-             if(type==='transfer') cat = 'Transferencia';
-        }
-        
-        let desc = document.getElementById('fConcept').value;
-        if(type!=='transfer' && !editingSplitChildren && (desc=='new'||!desc)) { 
-            desc=document.getElementById('fCustomDesc').value; 
-            if(desc && !data.concepts[cat].includes(desc)) data.concepts[cat].push(desc); 
-        }
-        if(type==='transfer') desc = 'Transferencia';
-        if(editingSplitChildren) desc = document.getElementById('fCustomDesc').value || '(Varios)';
-
-        const origAmt = parseFloat(document.getElementById('fAmount').value);
-        const curr = document.getElementById('fCurr').value;
-        const rates = { ARS: parseFloat(document.getElementById('rateArs').value), COP: parseFloat(document.getElementById('rateCop').value) };
-        let amount = origAmt;
-        if(curr === 'USD') amount = origAmt * rates.ARS;
-        if(curr === 'COP') amount = (origAmt / rates.COP) * rates.ARS;
-        
-        const tx = {
-            id: editId || Date.now(), date: document.getElementById('fDate').value,
-            amount: amount, origAmt: origAmt, curr: curr,
-            type: type, cat: cat, desc: desc,
-            exec: document.getElementById('fExec').checked, linkId: document.getElementById('fLink').value || null,
-            fromAccountId: document.getElementById('fFromAcc').value || null,
-            toAccountId: document.getElementById('fToAcc').value || null,
-            children: editingSplitChildren || []
-        };
-        if(editId) { const i=data.txs.findIndex(x=>x.id==editId); if(i>-1) data.txs[i]=tx; } else data.txs.push(tx);
-        saveData(); closeSheet();
-    };
-
-    function edit(id) {
-        if(isMonthClosed()) return alert("Mes Cerrado");
-        editId=id; const t=data.txs.find(x=>x.id==id); if(!t)return;
-        updateAccountSelects();
-        document.getElementById('fAmount').value=t.origAmt||t.amount; document.getElementById('fCurr').value=t.curr||'ARS';
-        document.getElementById('fDate').value=t.date; document.getElementById('fExec').checked=t.exec;
-        document.getElementById('btnDel').style.display='block';
-        
-        editingSplitChildren = (t.children && t.children.length > 0) ? t.children : null;
-        
-        if(editingSplitChildren) {
-             document.getElementById('splitWarning').style.display = 'block';
-             document.getElementById('splitList').innerHTML = editingSplitChildren.map(c => `<div>- ${c.cat}: ${c.desc} ($${c.amount})</div>`).join('');
-             document.getElementById('div-cat').style.display='none';
-             document.getElementById('div-desc').style.display='block';
-             document.getElementById('conChips').innerHTML=''; 
-             document.getElementById('fCustomDesc').style.display='block';
-             document.getElementById('fCustomDesc').value = t.desc;
-             setType('exp');
-        } else {
-             document.getElementById('splitWarning').style.display = 'none';
-             setType(t.type); 
-             if(t.type!=='transfer') {
-                tempCat=t.cat; document.getElementById('fCat').value=t.cat; renderCatChips(t.type);
-                document.getElementById('fConcept').value=t.desc; renderConChips(t.cat);
-                if(!data.concepts[t.cat]?.includes(t.desc)){ document.getElementById('fConcept').value='new'; document.getElementById('fCustomDesc').style.display='block'; document.getElementById('fCustomDesc').value=t.desc; }
-                tempLink=t.linkId||''; document.getElementById('fLink').value=tempLink; renderLinkChips();
-            }
-        }
-        
-        if(t.fromAccountId) document.getElementById('fFromAcc').value = t.fromAccountId;
-        if(t.toAccountId) document.getElementById('fToAcc').value = t.toAccountId;
-        openSheet();
-    }
-    function delTx(){ if(confirm('Eliminar?')){ data.txs.find(x=>x.id==editId).deletedAt=Date.now(); saveData(); closeSheet(); }}
-    
-    // --- ALLOC, STATS, SETTINGS ---
-    function clearSearch(type) {
-        if(type === 'exp') { document.getElementById('searchBar').value = ''; filterExp(); } 
-        else { document.getElementById('allocSearch').value = ''; renderAlloc(); }
-    }
-    function filterExp() {
-        const term = document.getElementById('searchBar').value.toLowerCase();
-        document.querySelectorAll('#list-exp .tx-card').forEach(r => r.style.display = r.innerText.toLowerCase().includes(term) ? 'block' : 'none');
-    }
-    function unassignAll() { if(isMonthClosed())return; if(confirm("¿Desvincular TODOS?")) { currentTxs.forEach(t => { if(t.type === 'exp') t.linkId = null; }); saveData(); }}
-    function autoAssign() {
-        if(isMonthClosed())return;
-        if(!confirm("¿Auto-Asignar?")) return;
-        let incomes = currentTxs.filter(t => t.type === 'inc').map(i => {
-            const assigned = currentTxs.filter(e => e.type === 'exp' && e.linkId == i.id).reduce((a,b)=>a+b.amount,0);
-            return { ...i, balance: i.amount - assigned };
-        });
-        const unassignedExps = currentTxs.filter(t => t.type === 'exp' && !t.linkId);
-        let count = 0;
-        unassignedExps.forEach(exp => {
-            const validIncome = incomes.find(inc => inc.date <= exp.date && inc.balance >= exp.amount);
-            if(validIncome) { exp.linkId = validIncome.id; validIncome.balance -= exp.amount; count++; }
-        });
-        if(count > 0) { alert(`Asignados: ${count}`); saveData(); } else alert("Sin coincidencias");
-    }
-    function renderAlloc() {
-        const c = document.getElementById('alloc-list'); c.innerHTML='';
-        const term = document.getElementById('allocSearch').value.toLowerCase();
-        const incs = currentTxs.filter(t=>t.type=='inc');
-        const exps = currentTxs.filter(t=>t.type=='exp');
-
-        incs.forEach(inc => {
-            const subs = exps.filter(e => e.linkId == inc.id);
-            const spent = subs.reduce((a,b)=>a+b.amount,0);
-            const remaining = inc.amount - spent;
-            const pctLeft = Math.max(0, 100 - (inc.amount > 0 ? (spent/inc.amount)*100 : 0));
-            const color = remaining >= 0 ? 'var(--inc)' : 'var(--exp)';
-            const filteredSubs = term ? subs.filter(s => s.desc.toLowerCase().includes(term)) : subs;
-            
-            if(term && filteredSubs.length === 0 && !inc.desc.toLowerCase().includes(term)) return;
-
-            const card = document.createElement('div'); card.className='alloc-card';
-            let childHTML = '';
-            (term ? filteredSubs : subs).forEach(s => {
-                const day = s.date.split('-')[2];
-                childHTML += `<div class="child-row ${s.exec?'executed':''}" onclick="edit('${s.id}')"><span>${s.desc} <span style="font-size:8px; color:var(--txt-sec);">d-${day}</span></span><span>$${fmt(s.amount)}</span></div>`;
-            });
-            if(!subs.length) childHTML = '<div class="child-row" style="font-style:italic; color:#cbd5e1; cursor:default;">Sin gastos</div>';
-            
-            card.innerHTML = `
-                <div class="alloc-head">
-                    <div onclick="this.closest('.alloc-card').querySelector('.alloc-children').style.display = this.closest('.alloc-card').querySelector('.alloc-children').style.display=='block'?'none':'block'" style="flex:1;">
-                        <div style="font-weight:700; font-size:11px;">${inc.desc}</div>
-                        <div style="font-size:9px; color:var(--txt-sec);">Ingreso: $${fmt(inc.amount)}</div>
-                    </div>
-                    <div style="display:flex; align-items:center; gap:10px;">
-                        <div style="text-align:right;">
-                            <div style="font-weight:800; font-size:11px; color:${color}">$${fmt(remaining)}</div>
-                            <div style="font-size:9px; color:var(--txt-sec);">Disponible</div>
-                        </div>
-                        <i class="fas fa-unlink" style="color:#cbd5e1; font-size:10px; padding:4px;" onclick="unassignGroup('${inc.id}')"></i>
-                    </div>
-                </div>
-                <div class="alloc-prog"><div class="alloc-fill" style="width:${pctLeft}%; background:${color}"></div></div>
-                <div class="alloc-children" style="display:${term?'block':'none'}">${childHTML}</div>
-            `;
-            c.appendChild(card);
-        });
-
-        const orphans = exps.filter(e => !e.linkId);
-        const orphansFiltered = term ? orphans.filter(e => e.desc.toLowerCase().includes(term)) : orphans;
-        const orphansTotal = orphans.reduce((a,b)=>a+b.amount,0);
-
-        if(orphans.length > 0 && (!term || orphansFiltered.length > 0)) {
-             let orphanHTML = '';
-             orphansFiltered.forEach(s => {
-                  const day = s.date.split('-')[2];
-                  orphanHTML += `<div class="child-row ${s.exec?'executed':''}" onclick="edit('${s.id}')"><span>${s.desc} <span style="font-size:8px; color:var(--txt-sec);">d-${day}</span></span><span>$${fmt(s.amount)}</span></div>`;
-             });
-             c.innerHTML += `
-                <div class="alloc-card" style="border-left:4px solid var(--exp);">
-                    <div class="alloc-head" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display=='block'?'none':'block'">
-                        <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:700; width:100%;">
-                            <span>Sin Asignar (${orphansFiltered.length})</span>
-                            <span style="color:var(--exp);">$${fmt(orphansTotal)}</span>
-                        </div>
-                    </div>
-                    <div class="alloc-children" style="display:none; border-top:1px solid #f1f5f9;">${orphanHTML}</div>
-                </div>`;
-        }
-    }
-
-    function renderStats() {
-        renderSpecificChart('exp', drillCatExp, 'chartExp', 'legExp', 'resetExp', 'titleExp', 'Gastos por Categoría');
-        renderSpecificChart('inc', drillCatInc, 'chartInc', 'legInc', 'resetInc', 'titleInc', 'Ingresos por Categoría');
-    }
-    function renderSpecificChart(type, drillCat, canvasId, legendId, resetBtnId, titleId, defaultTitle) {
-        let txs = currentTxs.filter(t => t.type == type);
-        let key = 'cat';
-        if(drillCat) {
-            document.getElementById(resetBtnId).style.display = 'block';
-            document.getElementById(titleId).innerText = drillCat;
-            txs = txs.filter(t => t.cat === drillCat); key = 'desc'; 
-        } else {
-            document.getElementById(resetBtnId).style.display = 'none';
-            document.getElementById(titleId).innerText = defaultTitle;
-        }
-        renderDoughnut(document.getElementById(canvasId), document.getElementById(legendId), txs, key, type);
-    }
-    function renderDoughnut(cvs, leg, txs, key, type) {
-        let map={}; txs.forEach(t=>{ const k=t[key]||'Gral'; map[k]=(map[k]||0)+t.amount; });
-        const ent = Object.entries(map).sort((a,b)=>b[1]-a[1]);
-        const tot = ent.reduce((a,b)=>a+b[1],0);
-        const chartInstance = Chart.getChart(cvs);
-        if(chartInstance) chartInstance.destroy();
-        new Chart(cvs, {
-            type: 'doughnut',
-            data: { labels: ent.map(e=>e[0]), datasets: [{ data: ent.map(e=>e[1]), backgroundColor: PALETTE, borderWidth:0 }] },
-            options: { 
-                responsive:true, maintainAspectRatio:false, cutout:'70%', animation: { duration: 0 }, plugins:{legend:{display:false}}, 
-                onClick:(e,el)=>{ if(el.length > 0) { const idx = el[0].index; const selected = ent[idx][0]; if(type === 'exp' && !drillCatExp) { drillCatExp = selected; renderStats(); } if(type === 'inc' && !drillCatInc) { drillCatInc = selected; renderStats(); } } }
-            } 
-        });
-        leg.innerHTML = '';
-        ent.forEach((e,i) => {
-            const pct = tot > 0 ? Math.round((e[1]/tot)*100) : 0;
-            leg.innerHTML += `<div class="legend-item" onclick="if('${type}'=='exp' && !drillCatExp){drillCatExp='${e[0]}';renderStats();} if('${type}'=='inc' && !drillCatInc){drillCatInc='${e[0]}';renderStats();}"><div style="display:flex; align-items:center; flex:1; min-width:0;"><div class="legend-dot" style="background:${PALETTE[i%PALETTE.length]}"></div><div class="legend-name">${e[0]}</div></div><div style="display:flex; align-items:center; gap:6px;"><span style="font-size:8px; color:var(--txt-sec);">${pct}%</span><span style="font-weight:700; font-size:10px; color:var(--txt);">$${fmt(e[1])}</span></div></div>`;
-        });
-    }
-    function resetChart(type) { if(type === 'exp') drillCatExp = null; if(type === 'inc') drillCatInc = null; renderStats(); }
-
-    // --- AQUI ESTA LA FUNCION QUE FALTABA ---
+    // --- RENDER SETTINGS (FIXED: COLLAPSED BY DEFAULT) ---
     function renderSettings() {
         renderRecurrentesList();
         renderAdminTree();
@@ -1134,11 +841,12 @@
                 </div>
             `).join('');
 
+            // Added style="display:none" to tree-body
             node.innerHTML = `
                 <div class="tree-head" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display=='block'?'none':'block'">
                     <span>${cat} <span style="font-weight:400; color:#94a3b8;">(${items.length})</span></span>
                 </div>
-                <div class="tree-body" style="display:block; padding:0;">${itemsHtml}</div>
+                <div class="tree-body" style="display:none; padding:0;">${itemsHtml}</div> 
             `;
             c.appendChild(node);
         });
@@ -1190,24 +898,24 @@
     function renderAdminTree() {
         const c = document.getElementById('admin-tree'); c.innerHTML='';
         
-        // CONFIGURACION DE INGRESOS Y EGRESOS
         [{k:'exp', label:'Gastos'},{k:'inc', label:'Ingresos'}].forEach(type => {
             (data.cats[type.k]||[]).forEach(cat => {
                 const node = document.createElement('div'); node.className='tree-node';
                 const concepts = data.concepts[cat]||[];
-                node.innerHTML = `<div class="tree-head" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display=='flex'?'none':'flex'"><span>${cat} <span style="font-weight:400; color:#94a3b8;">(${type.label} - ${concepts.length})</span></span><i class="fas fa-trash" style="color:#cbd5e1; font-size:9px;" onclick="event.stopPropagation();delCat('${type.k}','${cat}')"></i></div><div class="tree-body">${concepts.map(con => `<div class="concept-tag">${con} <i class="fas fa-times" style="color:#cbd5e1; cursor:pointer;" onclick="delCon('${cat}','${con}')"></i></div>`).join('')}<div class="concept-tag" style="background:white; border:1px dashed #cbd5e1; color:var(--accent); cursor:pointer;" onclick="addCon('${cat}')">+</div></div>`;
+                // Added style="display:none" to tree-body
+                node.innerHTML = `<div class="tree-head" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display=='flex'?'none':'flex'"><span>${cat} <span style="font-weight:400; color:#94a3b8;">(${type.label} - ${concepts.length})</span></span><i class="fas fa-trash" style="color:#cbd5e1; font-size:9px;" onclick="event.stopPropagation();delCat('${type.k}','${cat}')"></i></div><div class="tree-body" style="display:none;">${concepts.map(con => `<div class="concept-tag">${con} <i class="fas fa-times" style="color:#cbd5e1; cursor:pointer;" onclick="delCon('${cat}','${con}')"></i></div>`).join('')}<div class="concept-tag" style="background:white; border:1px dashed #cbd5e1; color:var(--accent); cursor:pointer;" onclick="addCon('${cat}')">+</div></div>`;
                 c.appendChild(node);
             });
         });
 
-        // NUEVA SECCION: TIPOS DE CUENTA (PATRIMONIO)
         const nodeAcc = document.createElement('div'); nodeAcc.className='tree-node';
         const accCats = data.accountCats || [];
+        // Added style="display:none" to tree-body
         nodeAcc.innerHTML = `
             <div class="tree-head" style="background:#EEF2FF; color:#312E81;" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display=='flex'?'none':'flex'">
                 <span>Tipos de Cuenta <span style="font-weight:400;">(${accCats.length})</span></span>
             </div>
-            <div class="tree-body">
+            <div class="tree-body" style="display:none;">
                 ${accCats.map(cat => `<div class="concept-tag">${cat} <i class="fas fa-trash" style="color:#cbd5e1; cursor:pointer;" onclick="delAccCat('${cat}')"></i></div>`).join('')}
                 <div class="concept-tag" style="background:white; border:1px dashed #cbd5e1; color:var(--accent); cursor:pointer;" onclick="addAccCat()">+</div>
             </div>
@@ -1218,8 +926,6 @@
     function delCat(t,c){ if(isMonthClosed())return; if(confirm('Borrar?')) { data.cats[t]=data.cats[t].filter(x=>x!==c); delete data.concepts[c]; saveData(); renderSettings(); }}
     function delCon(c,n){ if(isMonthClosed())return; if(confirm('Borrar?')) { data.concepts[c]=data.concepts[c].filter(x=>x!==n); saveData(); renderSettings(); }}
     function addCon(c){ if(isMonthClosed())return; const n=prompt('Nueva:'); if(n){ if(!data.concepts[c])data.concepts[c]=[]; data.concepts[c].push(n); saveData(); renderSettings(); }}
-    
-    // FUNCIONES PARA TIPOS DE CUENTA
     function delAccCat(c){ if(isMonthClosed())return; if(confirm('¿Borrar tipo de cuenta?')) { data.accountCats = data.accountCats.filter(x=>x!==c); saveData(); renderSettings(); }}
     function addAccCat(){ if(isMonthClosed())return; const n=prompt('Nuevo Tipo de Cuenta:'); if(n){ if(!data.accountCats)data.accountCats=[]; data.accountCats.push(n); saveData(); renderSettings(); }}
 
