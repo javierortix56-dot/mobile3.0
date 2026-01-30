@@ -555,7 +555,6 @@
         
         renderDash(); 
         
-        // CORRECCION: Llamar siempre a las funciones de renderizado para evitar pestañas vacias
         renderAlloc();
         if(document.getElementById('view-stats').classList.contains('active')) renderStats();
         if(document.getElementById('view-settings').classList.contains('active')) renderSettings();
@@ -644,9 +643,8 @@
 
     function renderNetWorth() {
         const rates = { ARS: parseFloat(document.getElementById('rateArs').value)||1200, COP: parseFloat(document.getElementById('rateCop').value)||3700 };
-        // USAR FECHA ACTUAL, NO LA SELECCIONADA EN LA APP
-        const today = new Date();
-        const currentEnd = new Date(today.getFullYear(), today.getMonth()+1, 0).toISOString().split('T')[0];
+        // FIX: Usar la fecha seleccionada (currentDate) en lugar de hoy
+        const currentEnd = new Date(currentDate.getFullYear(), currentDate.getMonth()+1, 0).toISOString().split('T')[0];
         const balances = computeBalancesAsOf(currentEnd, rates);
         
         const list = document.getElementById('list-accounts');
@@ -658,7 +656,7 @@
             if(a.dateCreated && a.dateCreated > currentEnd) return;
 
             const bal = balances[a.id] || 0;
-            // CONVERSION FORZADA A USD PARA DISPLAY
+            // Conversion forzada a USD
             let balUSD = 0;
             if(a.currency === 'USD') balUSD = bal;
             else if(a.currency === 'ARS') balUSD = bal / rates.ARS;
@@ -681,15 +679,16 @@
                     </div>
                 </div>
                 <div class="nw-val">
-                    <div class="nw-amt">USD ${fmt(balUSD)}</div>
+                    <div class="nw-amt">USD $${fmt(balUSD)}</div>
                     ${a.currency!=='USD' ? `<div class="nw-native">${fmt(bal)} ${a.currency}</div>` : ''}
                 </div>
             `;
             list.appendChild(el);
         });
 
-        document.getElementById('nw-assets').innerText = `$${fmt(totalAssets)}`;
-        document.getElementById('nw-liabs').innerText = `$${fmt(totalLiabs)}`;
+        // FIX: Mostrar simbolo USD explícito
+        document.getElementById('nw-assets').innerText = `USD $${fmt(totalAssets)}`;
+        document.getElementById('nw-liabs').innerText = `USD $${fmt(totalLiabs)}`;
 
         renderNetWorthChart(rates);
     }
@@ -742,8 +741,8 @@
         types.forEach(t => datasetsMap[t] = []);
         datasetsMap['Pasivos'] = []; 
 
-        // CALCULO HISTORICO: 6 MESES ATRAS DESDE HOY
-        let d = new Date(); 
+        // FIX: Usar 'currentDate' para que el gráfico se mueva con el mes seleccionado
+        let d = new Date(currentDate); 
         d.setDate(1); 
         d.setMonth(d.getMonth()-5); 
         
@@ -754,6 +753,8 @@
             const sums = {}; types.forEach(t => sums[t]=0); sums['Pasivos']=0;
 
             data.accounts.forEach(a => {
+                if(a.dateCreated && a.dateCreated > end) return;
+
                 let v = bals[a.id];
                 let vUSD = 0;
                 if(a.currency === 'USD') vUSD = v;
@@ -761,7 +762,7 @@
                 else if(a.currency === 'COP') vUSD = v / rates.COP; 
 
                 if(a.kind === 'liability') {
-                    sums['Pasivos'] -= vUSD; // NEGATIVO PARA ROJO HACIA ABAJO
+                    sums['Pasivos'] -= vUSD; 
                 } else {
                     const t = a.type || 'Otro';
                     sums[t] = (sums[t]||0) + vUSD;
@@ -798,18 +799,26 @@
                 plugins: { legend: { display: false } },
                 scales: { 
                     x: { grid: { display:false }, stacked: true }, 
-                    y: { stacked: true, ticks: { callback: v => parseInt(v/1000)+'k' } } 
+                    y: { 
+                        stacked: true, 
+                        ticks: { 
+                            // FIX: Escala exacta para numeros pequeños (<1000)
+                            callback: v => {
+                                if(Math.abs(v) < 1000) return '$' + Math.round(v);
+                                return '$' + (v/1000).toFixed(1) + 'k';
+                            } 
+                        } 
+                    } 
                 }
             }
         });
     }
 
-    // --- ACCOUNT MANAGEMENT CORREGIDO ---
+    // --- ACCOUNT MANAGEMENT ---
     function openAccountSheet() { 
         if(isMonthClosed()) return alert("Mes Cerrado");
         editAccId=null; document.getElementById('accForm').reset(); document.getElementById('btnDelAcc').style.display='none'; 
         
-        // CORRECCION: Asegurar que hay categorías antes de abrir
         if(!data.accountCats || data.accountCats.length === 0) {
             data.accountCats = ['Efectivo', 'Banco', 'Inversiones', 'Cripto', 'Tarjeta', 'Otro'];
         }
