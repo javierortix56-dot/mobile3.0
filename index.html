@@ -1,1406 +1,1521 @@
 <!DOCTYPE html>
-<html lang="es">
+<html class="light" lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="theme-color" content="#0F172A">
-    <title>Finanzas J&M Pro</title>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Finanzas J&M | V14 Split Pro</title>
     
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="apple-touch-icon" href="https://img.icons8.com/fluency/96/wallet.png">
-    
-    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
+    
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: { "primary": "#0e757c", "primary-dark": "#085055", "surface": "#ffffff", "success": "#15803d", "danger": "#b91c1c", "warning": "#b45309" },
+                    fontFamily: { "display": ["Manrope", "sans-serif"], "body": ["Manrope", "sans-serif"] }
+                }
+            }
+        }
+    </script>
+    
     <style>
-        :root { 
-            --bg: #F8FAFC; --surface: #FFFFFF; --txt: #1E293B; --txt-sec: #64748B; 
-            --primary: #0F172A; --accent: #3B82F6; --inc: #10B981; --exp: #EF4444; 
-            --border: #E2E8F0; --glass: rgba(255, 255, 255, 0.95);
-            --safe-top: env(safe-area-inset-top);
-            --safe-bottom: env(safe-area-inset-bottom);
+        /* ESTILO COMPACTO GLOBAL (UI V13) */
+        body { font-family: 'Manrope', sans-serif; background-color: #f8fafc; font-size: 12px; }
+        
+        .glass-sidebar { background: rgba(255, 255, 255, 0.98); border-right: 1px solid #e2e8f0; }
+        .glass-panel { background: white; border: 1px solid #e2e8f0; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        
+        .hidden-view { display: none !important; }
+        .active-nav { background-color: rgba(14, 117, 124, 0.08); color: #0e757c; border-right: 3px solid #0e757c; }
+        
+        /* FILAS COMPACTAS */
+        .compact-row { 
+            padding: 4px 8px; 
+            border-bottom: 1px solid #f1f5f9; 
+            transition: all 0.1s; 
+            min-height: 34px; 
         }
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
-        body { font-family: 'Manrope', sans-serif; background: var(--bg); margin: 0; color: var(--txt); height: 100vh; overflow: hidden; user-select: none; display: flex; flex-direction: column; }
-
-        /* HEADER */
-        .header { 
-            padding-top: calc(10px + var(--safe-top)); 
-            padding-bottom: 10px;
-            padding-left: 15px; padding-right: 15px;
-            background: var(--glass); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(0,0,0,0.05); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; z-index: 50; 
+        .compact-row:last-child { border-bottom: none; }
+        .compact-row:hover { background-color: #f8fafc; }
+        
+        /* ESTADO SELECCIONADO */
+        .compact-row.selected { 
+            background-color: #e0f2fe !important; 
+            border-left: 3px solid #0e757c; 
+            padding-left: 5px; 
         }
-        .brand { font-weight: 800; font-size: 13px; letter-spacing: -0.3px; display:flex; gap:6px; align-items:center; color: var(--primary); white-space: nowrap; }
         
-        /* PUNTO DE SYNC ACTIVO */
-        .sync-dot { width:10px; height:10px; border-radius:50%; background:#CBD5E1; transition:0.3s; box-shadow: 0 0 0 2px white; cursor: pointer; }
-        .sync-dot:active { transform: scale(1.2); }
-        .sync-spin { animation: spin 1s linear infinite; border: 2px solid #3B82F6; border-top: 2px solid transparent; background: transparent !important; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-        .date-pill { background: rgba(0,0,0,0.03); border-radius: 99px; padding: 4px 10px; display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 12px; border: 1px solid rgba(0,0,0,0.05); }
-        .btn-arrow { background: none; border: none; font-size: 12px; color: var(--txt); cursor: pointer; padding: 4px; opacity: 0.6; }
-
-        /* LAYOUT */
-        .main-container { flex: 1; position: relative; overflow: hidden; display: flex; flex-direction: column; }
-        .view-section { display: none; height: 100%; flex-direction: column; } 
-        .view-section.active { display: flex; animation: fadeIn 0.2s ease; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-        /* DASHBOARD */
-        .dash-content { padding: 8px 10px; display: flex; flex-direction: column; height: 100%; gap: 8px; }
-        .kpi-hero { background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%); padding: 12px; border-radius: 14px; color: white; box-shadow: 0 4px 10px rgba(15, 23, 42, 0.2); flex-shrink: 0; }
-        .hero-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
-        .hero-bal { font-size: 24px; font-weight: 800; line-height: 1; transition: color 0.3s; }
-        .hero-usd { font-size: 10px; opacity: 0.8; font-weight: 600; margin-left: 2px; transition: color 0.3s; }
-        .tc-widget { background: rgba(255,255,255,0.1); padding: 1px 6px; border-radius: 4px; font-size: 9px; display: flex; align-items: center; gap: 3px; font-weight: 600; margin-bottom: 2px; }
-        .tc-inp { background: transparent; border: none; color: white; font-weight: 700; width: 35px; text-align: right; font-size: 9px; border-bottom: 1px solid rgba(255,255,255,0.3); padding: 0; }
-        .hero-stats { display: flex; gap: 10px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.1); }
-        .stat-item { flex: 1; display:flex; align-items: center; } 
-        .stat-lbl { font-size: 8px; opacity: 0.6; font-weight: 600; }
-        .stat-val { font-size: 11px; font-weight: 700; }
-
-        /* TABS */
-        .tabs-pill { display: flex; background: #E2E8F0; padding: 2px; border-radius: 8px; flex-shrink: 0; }
-        .tab-btn { flex: 1; text-align: center; padding: 6px; border-radius: 6px; font-size: 10px; font-weight: 700; color: var(--txt-sec); cursor: pointer; transition: 0.2s; }
-        .tab-btn.active { background: white; color: var(--primary); box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-
-        /* LISTAS */
-        .grid-lists { display: flex; gap: 8px; flex: 1; min-height: 0; width: 100%; overflow: hidden; }
-        .list-col { flex: 1; background: var(--surface); border-radius: 10px; border: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
-        .col-head { padding: 6px; text-align: center; font-size: 9px; font-weight: 800; color: white; text-transform: uppercase; letter-spacing: 0.5px; flex-shrink: 0; display: flex; justify-content: space-between; align-items: center; }
-        .bg-inc { background: var(--inc); justify-content: center; } 
-        .bg-exp { background: var(--exp); }
-        .list-scroll { flex: 1; overflow-y: auto; padding: 0; -webkit-overflow-scrolling: touch; }
+        .chip { border: 1px solid #e2e8f0; background: white; color: #475569; font-size: 10px; font-weight: 600; transition: all 0.1s; border-radius: 12px; }
+        .chip:hover { border-color: #0e757c; color: #0e757c; }
+        .chip.active { background: #0e757c; color: white; border-color: #0e757c; }
         
-        .search-container { display:flex; align-items:center; background:#FEF2F2; padding-right:5px; border-bottom:1px solid #fecaca; }
-        .search-inp { width:100%; border:none; padding:6px; font-size:9px; background:transparent; }
-        .btn-clear { background:none; border:none; font-size:10px; color:#EF4444; cursor:pointer; padding:0 5px; }
+        /* CHECKBOXES */
+        .custom-chk { width: 14px; height: 14px; border-radius: 4px; border: 1px solid #cbd5e1; display:flex; align-items:center; justify-content:center; transition:0.1s; cursor: pointer; background: white; }
+        .custom-chk:hover { border-color: #0e757c; }
+        .custom-chk.checked { background: #0e757c; border-color: #0e757c; }
+        .custom-chk.checked i { display:block; }
+        .custom-chk.exec { border-color: #15803d; background: transparent; }
+        .custom-chk.exec i { display:block; color: #15803d; font-weight: 900; }
+        .custom-chk i { color:white; font-size:9px; display:none; }
 
-        /* TARJETA MOVIMIENTO */
-        .tx-card { background: white; padding: 8px 10px; border-bottom: 1px solid #F1F5F9; cursor: pointer; }
-        .tx-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px; }
-        .tx-desc { font-weight: 700; font-size: 11px; color: var(--txt); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 90px; letter-spacing: -0.2px; }
-        .tx-amt { font-weight: 800; font-size: 11px; }
-        .tx-sub { display: flex; justify-content: space-between; font-size: 9px; color: var(--txt-sec); align-items: center; margin-top: 1px; }
+        .cat-tag { font-size: 10px; padding: 1px 6px; border-radius: 4px; background: #f1f5f9; color: #64748b; border: 1px solid transparent; }
+        .cat-tag:hover { border-color: #cbd5e1; color: #334155; background: white; }
+
+        /* Inputs Numéricos Limpios */
+        input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
         
-        .cat-tag { background: #F1F5F9; padding: 0px 4px; border-radius: 3px; font-size: 8px; font-weight: 600; color: var(--txt-sec); }
-        .source-tag { background: #DBEAFE; color: #1E40AF; padding: 0px 5px; border-radius: 3px; font-size: 9px; font-weight: 800; display: flex; align-items: center; gap: 3px; margin-right: 4px; }
+        .tc-input { -moz-appearance: textfield; background: transparent; border: none; padding: 0 4px; margin: 0; font-weight: 700; color: #334155; text-align: right; font-size: 11px; height: 100%; width: 70px;}
+        .tc-input:focus { outline: none; ring: 0; border-bottom: 1px solid #0e757c; }
+
+        /* SPLIT MEJORADO */
+        details > summary { list-style: none; }
+        details > summary::-webkit-details-marker { display: none; }
+        /* El contenedor de filas split ahora es un grid más complejo */
+        .split-input-row { display: flex; flex-direction: column; gap: 4px; margin-bottom: 6px; background: #fff; padding: 6px; border: 1px solid #e2e8f0; border-radius: 8px; }
         
-        .acc-badge { font-size:8px; font-weight:700; padding:1px 4px; border-radius:4px; background:#f1f5f9; border:1px solid #e2e8f0; color:#64748b; margin-right:4px; }
+        /* BARRA MASIVA */
+        #bulkBar { transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); transform: translate(-50%, 150px); }
+        #bulkBar.show { transform: translate(-50%, 0); display: flex; }
         
-        .magic-q { font-size: 9px; font-weight: 700; margin-left: 4px; }
-        .q-ok { color: var(--inc); } .q-bad { color: var(--exp); }
-
-        .executed { opacity: 0.5; }
-        .executed .tx-desc, .executed .tx-amt { text-decoration: line-through; color: var(--txt-sec) !important; }
-
-        /* NETWORTH / ACCOUNTS */
-        .nw-card { background:white; border-radius:12px; padding:10px; border:1px solid var(--border); margin-bottom:8px; display:flex; align-items:center; justify-content:space-between; box-shadow:0 1px 2px rgba(0,0,0,0.02); }
-        .nw-icon { width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:14px; margin-right:10px; flex-shrink:0; }
-        .nw-green { background:#D1FAE5; color:#059669; }
-        .nw-red { background:#FEE2E2; color:#DC2626; }
-        .nw-info { flex:1; min-width:0; }
-        .nw-name { font-weight:700; font-size:11px; color:var(--txt); }
-        .nw-curr { font-size:9px; color:var(--txt-sec); font-weight:600; }
-        .nw-val { text-align:right; }
-        .nw-amt { font-weight:800; font-size:11px; color:var(--txt); }
-        .nw-native { font-size:9px; color:var(--txt-sec); }
-
-        /* ALLOCATION */
-        .alloc-container { flex: 1; overflow-y: auto; padding-bottom: 20px; }
-        .alloc-card { background: white; border-radius: 10px; border: 1px solid var(--border); margin-bottom: 8px; overflow: hidden; }
-        .alloc-head { padding: 10px; display: flex; justify-content: space-between; align-items: center; background: white; border-bottom: 1px solid #f1f5f9; cursor: pointer; }
-        .alloc-prog { height: 4px; width: 100%; background: #E2E8F0; }
-        .alloc-fill { height: 100%; background: var(--inc); }
-        .alloc-children { background: #F8FAFC; display: none; border-top: 1px solid var(--border); }
-        .child-row { padding: 8px 10px; display: flex; justify-content: space-between; font-size: 11px; color: var(--txt); border-bottom: 1px solid rgba(0,0,0,0.03); cursor: pointer; } 
-        .child-row:active { background: #F1F5F9; }
-        .child-row.executed span { text-decoration: line-through; opacity: 0.6; }
-        
-        .alloc-tools { display: flex; gap:8px; margin-bottom:10px; }
-        .btn-alloc { flex:1; padding:10px; border-radius:8px; font-size:10px; font-weight:700; border:none; display:flex; align-items:center; justify-content:center; gap:6px; cursor:pointer; }
-        .btn-auto { background: linear-gradient(135deg, #3B82F6, #2563EB); color: white; box-shadow: 0 2px 5px rgba(37, 99, 235, 0.3); }
-        .btn-reset { background: white; border: 1px solid var(--border); color: #EF4444; }
-
-        /* CHARTS */
-        .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 10px; }
-        .chart-card { background: white; border: 1px solid var(--border); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; }
-        .chart-header { font-size: 11px; font-weight: 800; text-transform: uppercase; color: var(--txt-sec); margin-bottom: 8px; display: flex; justify-content: space-between; }
-        .chart-body { display: flex; align-items: center; gap: 10px; height: 160px; }
-        .chart-line-body { height: 160px; width: 100%; position: relative; }
-        .donut-container { width: 120px; height: 120px; flex-shrink: 0; position: relative; }
-        .legend-container { flex: 1; height: 100%; overflow-y: auto; padding-right: 2px; }
-        .legend-item { display: flex; align-items: center; justify-content: space-between; font-size: 9px; padding: 5px 0; border-bottom: 1px dashed #F1F5F9; cursor: pointer; }
-        .legend-dot { width: 6px; height: 6px; border-radius: 50%; margin-right: 5px; flex-shrink: 0; }
-        .legend-name { color: var(--txt); font-weight: 600; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-        /* NAV & SHEET */
-        .bottom-nav { height: 60px; background: var(--glass); border-top: 1px solid rgba(0,0,0,0.05); display: flex; justify-content: space-around; align-items: center; flex-shrink: 0; padding-bottom: var(--safe-bottom); }
-        .nav-btn { font-size: 18px; color: #CBD5E1; background: none; border: none; padding: 6px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
-        .nav-btn span { font-size: 9px; font-weight: 700; }
-        .nav-btn.active { color: var(--primary); }
-        .fab { width: 48px; height: 48px; background: var(--primary); border-radius: 16px; color: white; display: flex; align-items: center; justify-content: center; font-size: 20px; transform: translateY(-15px); border: 4px solid var(--bg); box-shadow: 0 6px 15px rgba(15,23,42,0.3); }
-
-        .sheet, .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; opacity: 0; pointer-events: none; transition: 0.2s; display: flex; align-items: flex-end; backdrop-filter: blur(2px); }
-        .sheet.open, .modal-overlay.open { opacity: 1; pointer-events: auto; }
-        .sheet-box { background: var(--surface); width: 100%; border-radius: 16px 16px 0 0; padding: 20px; max-height: 90vh; overflow-y: auto; transform: translateY(100%); transition: 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); padding-bottom: calc(20px + var(--safe-bottom)); }
-        .sheet.open .sheet-box { transform: translateY(0); }
-        .modal-center { background: white; width: 85%; margin: auto; border-radius: 16px; padding: 20px; transform: scale(0.9); transition: 0.2s; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
-        .modal-overlay.open .modal-center { transform: scale(1); }
-
-        /* FORM */
-        .big-inp { width: 100%; border: none; background: #F1F5F9; border-radius: 10px; font-size: 20px; font-weight: 800; padding: 12px; color: var(--txt); text-align: right; margin-bottom: 8px; }
-        .chip-container { display: flex; gap: 5px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 12px; scrollbar-width: none; }
-        .chip { padding: 5px 10px; border-radius: 6px; background: white; border: 1px solid var(--border); color: var(--txt-sec); font-weight: 600; font-size: 10px; white-space: nowrap; transition: 0.1s; }
-        .chip.active { background: var(--primary); color: white; border-color: var(--primary); }
-        .inp-lbl { font-size: 9px; font-weight: 800; color: var(--txt-sec); text-transform: uppercase; margin-bottom: 4px; display: block; }
-        .sel-acc { width:100%; padding:10px; border:1px solid var(--border); border-radius:8px; background:white; font-size:11px; font-weight:700; margin-bottom:10px; }
-        
-        /* IOS SWITCH */
-        .switch { position: relative; display: inline-block; width: 34px; height: 20px; }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; -webkit-transition: .4s; transition: .4s; border-radius: 34px; }
-        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 2px; bottom: 2px; background-color: white; -webkit-transition: .4s; transition: .4s; border-radius: 50%; }
-        input:checked + .slider { background-color: var(--inc); }
-        input:checked + .slider:before { -webkit-transform: translateX(14px); -ms-transform: translateX(14px); transform: translateX(14px); }
-
-        /* SETTINGS & TREE */
-        .settings-group { margin-bottom: 20px; }
-        .tree-node { margin-bottom: 6px; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: white; }
-        .tree-head { padding: 6px 10px; background: #F8FAFC; display: flex; justify-content: space-between; align-items: center; font-size: 10px; font-weight: 700; cursor: pointer; }
-        .tree-body { padding: 6px; display: none; flex-wrap: wrap; gap: 4px; border-top: 1px solid var(--border); }
-        .concept-tag { font-size: 9px; padding: 2px 6px; background: #F1F5F9; border-radius: 4px; border: 1px solid transparent; display: flex; align-items: center; gap: 3px; }
-
-        .loader { position:fixed; inset:0; background:rgba(255,255,255,0.8); z-index:200; display:none; align-items:center; justify-content:center; }
-        
-        .lock-badge { font-size:10px; color:#EF4444; margin-right:5px; animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { opacity:0.5; } 50% { opacity:1; } 100% { opacity:0.5; } }
+        .d-picker { position: absolute; inset:0; opacity:0; cursor: pointer; width: 100%; }
     </style>
 </head>
-<body>
 
-<div id="loader" class="loader"><i class="fas fa-circle-notch fa-spin fa-2x" style="color:var(--primary)"></i></div>
+<body class="text-slate-900 h-screen flex overflow-hidden selection:bg-primary/20">
 
-<div class="header">
-    <div class="brand">
-        <i class="fas fa-lock lock-badge" id="lockIcon" style="display:none;"></i>
-        Finanzas J&M Pro 
-        <div id="syncDot" class="sync-dot" onclick="forceSync()"></div>
-    </div>
-    <div class="date-pill" onclick="changeMonth(0)"> 
-        <button class="btn-arrow" onclick="event.stopPropagation(); changeMonth(-1)"><i class="fas fa-chevron-left"></i></button>
-        <div class="date-txt" id="monthTxt">...</div>
-        <button class="btn-arrow" onclick="event.stopPropagation(); changeMonth(1)"><i class="fas fa-chevron-right"></i></button>
-    </div>
-    <div style="width:20px;"></div>
-</div>
-
-<div class="main-container">
-
-    <div id="view-home" class="view-section active">
-        <div class="dash-content">
-            <div class="kpi-hero">
-                <div class="hero-top">
-                    <div>
-                        <div class="hero-bal" id="kpiBal">$0</div>
-                        <div class="hero-usd">≈ USD <span id="kpiUsd">0</span></div>
-                    </div>
-                    <div style="display:flex; flex-direction:column; align-items:flex-end;">
-                        <div class="tc-widget">1 USD = <input type="number" inputmode="decimal" id="rateArs" value="1200" class="tc-inp" onchange="saveRates()"> ARS</div>
-                        <div class="tc-widget">1 USD = <input type="number" inputmode="decimal" id="rateCop" value="3700" class="tc-inp" onchange="saveRates()"> COP</div>
-                    </div>
+    <aside class="glass-sidebar w-14 hover:w-56 transition-all duration-300 group fixed h-screen z-40 flex flex-col justify-between py-3 shadow-lg">
+        <div class="flex flex-col gap-4">
+            <div class="flex items-center justify-center h-8 px-2 group-hover:justify-start group-hover:px-3 transition-all">
+                <div class="bg-primary size-7 rounded-md flex items-center justify-center text-white shrink-0 shadow-sm">
+                    <span class="material-symbols-outlined text-base">account_balance_wallet</span>
                 </div>
-                <div class="hero-stats">
-                    <div class="stat-item" style="justify-content:flex-start; gap:8px;"><span class="stat-lbl">INGRESOS</span><span class="stat-val" style="color:#34D399" id="sum-inc">$0</span></div>
-                    <div class="stat-item" style="justify-content:flex-end; gap:8px;"><span class="stat-lbl">GASTOS</span><span class="stat-val" style="color:#F87171" id="sum-exp">$0</span></div>
-                </div>
+                <h1 class="font-bold text-xs text-primary ml-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap overflow-hidden">Finanzas J&M</h1>
             </div>
 
-            <div class="tabs-pill">
-                <div class="tab-btn active" id="tab-txs" onclick="setSubTab('txs')">Movimientos</div>
-                <div class="tab-btn" id="tab-alloc" onclick="setSubTab('alloc')">Asignación</div>
-            </div>
-
-            <div id="sec-txs" class="grid-lists">
-                <div class="list-col">
-                    <div class="col-head bg-inc">Ingresos</div>
-                    <div id="list-inc" class="list-scroll"></div>
-                </div>
-                <div class="list-col">
-                    <div class="col-head bg-exp">
-                        <span>Egresos</span>
-                        <i class="fas fa-search" style="opacity:0.7; font-size:9px;" onclick="document.getElementById('searchBar').classList.toggle('hidden')"></i>
-                    </div>
-                    <div id="searchContainerExp" class="search-container hidden">
-                        <input type="text" id="searchBar" placeholder="Buscar..." class="search-inp" oninput="filterExp()">
-                        <button class="btn-clear" onclick="clearSearch('exp')"><i class="fas fa-times"></i></button>
-                    </div>
-                    <div id="list-exp" class="list-scroll"></div>
-                </div>
-            </div>
-
-            <div id="sec-alloc" style="display:none;" class="alloc-container">
-                <div class="alloc-tools">
-                    <button class="btn-alloc btn-auto" onclick="autoAssign()"><i class="fas fa-magic"></i> Auto-Asignar</button>
-                    <button class="btn-alloc btn-reset" onclick="unassignAll()"><i class="fas fa-unlink"></i> Desasignar Todo</button>
-                </div>
-                <div class="search-alloc-wrap" style="display:flex; align-items:center; background:#F1F5F9; border:1px solid var(--border); border-radius:8px; margin-bottom:8px; padding-right:8px;">
-                    <input type="text" id="allocSearch" style="width:100%; padding:8px; border:none; background:transparent; font-size:11px;" placeholder="Buscar gasto asignado..." oninput="renderAlloc()">
-                    <button class="btn-clear" onclick="clearSearch('alloc')"><i class="fas fa-times"></i></button>
-                </div>
-                <div id="alloc-list"></div>
-            </div>
+            <nav class="flex flex-col gap-0.5 px-1" id="main-nav">
+                <button onclick="nav('dashboard', this)" id="nav-dashboard" class="active-nav flex items-center h-9 rounded-md px-2 text-slate-500 hover:bg-slate-100 transition-colors w-full overflow-hidden">
+                    <span class="material-symbols-outlined text-lg shrink-0">dashboard</span>
+                    <span class="ml-3 text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Operaciones</span>
+                </button>
+                <button onclick="nav('networth', this)" class="flex items-center h-9 rounded-md px-2 text-slate-500 hover:bg-slate-100 transition-colors w-full overflow-hidden">
+                    <span class="material-symbols-outlined text-lg shrink-0">savings</span>
+                    <span class="ml-3 text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Patrimonio</span>
+                </button>
+                <button onclick="nav('analytics', this)" class="flex items-center h-9 rounded-md px-2 text-slate-500 hover:bg-slate-100 transition-colors w-full overflow-hidden">
+                    <span class="material-symbols-outlined text-lg shrink-0">query_stats</span>
+                    <span class="ml-3 text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Análisis</span>
+                </button>
+                <button onclick="nav('admin', this)" class="flex items-center h-9 rounded-md px-2 text-slate-500 hover:bg-slate-100 transition-colors w-full overflow-hidden">
+                    <span class="material-symbols-outlined text-lg shrink-0">settings</span>
+                    <span class="ml-3 text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Ajustes</span>
+                </button>
+                <button onclick="forceSync()" class="flex items-center h-9 rounded-md px-2 text-primary hover:bg-slate-100 transition-colors w-full overflow-hidden mt-2 border-t border-slate-100 pt-2" title="Forzar Sincronización">
+                    <span class="material-symbols-outlined text-lg shrink-0" id="syncIcon">cloud_sync</span>
+                    <span class="ml-3 text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Sincronizar</span>
+                </button>
+            </nav>
         </div>
-    </div>
 
-    <div id="view-networth" class="view-section" style="padding:10px; overflow-y:auto; background:#F1F5F9;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-            <h3 style="margin:0; font-size:14px; font-weight:800; color:var(--primary);">Patrimonio (USD)</h3>
-            <button onclick="openAccountSheet()" style="background:var(--primary); color:white; border:none; border-radius:6px; padding:6px 10px; font-size:10px; font-weight:700;">+ Cuenta</button>
+        <div class="px-2" id="newBtnContainer">
+            <button onclick="openModal()" class="flex items-center justify-center w-full h-9 bg-primary/10 text-primary hover:bg-primary hover:text-white rounded-md transition-all mb-2 group-hover:justify-start group-hover:px-3">
+                <span class="material-symbols-outlined text-lg">add</span>
+                <span class="ml-3 text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Nuevo</span>
+            </button>
         </div>
+    </aside>
+
+    <main class="flex-1 ml-14 p-2 lg:p-3 h-screen overflow-hidden relative flex flex-col bg-slate-50">
         
-        <div class="chart-card" style="margin-bottom:15px; height:240px;">
-            <div class="chart-header"><span>Evolución (USD)</span></div>
-            <div class="chart-line-body" style="height:100%;">
-                <canvas id="chartNetWorth"></canvas>
-            </div>
-        </div>
-
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:15px;">
-             <div class="nw-card" style="flex-direction:column; align-items:flex-start; margin:0;">
-                 <span style="font-size:9px; font-weight:700; color:var(--txt-sec); text-transform:uppercase;">Activos Totales</span>
-                 <span style="font-size:16px; font-weight:800; color:#059669;" id="nw-assets">$0</span>
-             </div>
-             <div class="nw-card" style="flex-direction:column; align-items:flex-start; margin:0;">
-                 <span style="font-size:9px; font-weight:700; color:var(--txt-sec); text-transform:uppercase;">Pasivos Totales</span>
-                 <span style="font-size:16px; font-weight:800; color:#DC2626;" id="nw-liabs">$0</span>
-             </div>
-        </div>
-
-        <div id="list-accounts"></div>
-    </div>
-
-    <div id="view-stats" class="view-section" style="padding:10px; overflow-y:auto;">
-        <div class="charts-grid">
-            <div class="chart-card">
-                <div class="chart-header">
-                    <span id="titleExp">Gastos por Categoría</span>
-                    <button onclick="resetChart('exp')" id="resetExp" style="border:none; background:none; color:var(--accent); font-size:9px; display:none;">VOLVER</button>
-                </div>
-                <div class="chart-body">
-                    <div class="donut-container"><canvas id="chartExp"></canvas></div>
-                    <div class="legend-container" id="legExp"></div>
+        <header class="flex justify-between items-center mb-2 shrink-0 gap-2 h-8">
+            <div class="flex items-center gap-3 h-full">
+                <h2 class="text-base font-extrabold tracking-tight text-slate-800" id="pageTitle">Panel</h2>
+                
+                <div class="flex items-center gap-0.5 bg-white px-1.5 rounded border border-slate-200 shadow-sm transition-colors relative group h-7">
+                    <button onclick="changeMonth(-1)" class="text-slate-400 hover:text-primary flex items-center px-0.5"><span class="material-symbols-outlined text-base">chevron_left</span></button>
+                    <div class="relative min-w-[80px] text-center flex items-center justify-center h-full gap-1">
+                        <span class="material-symbols-outlined text-[10px] text-slate-400 hidden" id="lockIcon" title="Mes Cerrado">lock</span>
+                        <span class="text-[10px] font-bold uppercase text-slate-700 tracking-wide" id="monthTxt">...</span>
+                        <input type="month" id="datePicker" class="d-picker" onchange="manualDate()">
+                    </div>
+                    <button onclick="changeMonth(1)" class="text-slate-400 hover:text-primary flex items-center px-0.5"><span class="material-symbols-outlined text-base">chevron_right</span></button>
+                    <div class="w-px h-3 bg-slate-200 mx-1"></div>
+                    <button onclick="undo()" id="btnUndo" class="text-slate-400 hover:text-primary flex items-center px-0.5 btn-disabled" title="Deshacer (Ctrl+Z)"><span class="material-symbols-outlined text-base">undo</span></button>
+                    <button onclick="redo()" id="btnRedo" class="text-slate-400 hover:text-primary flex items-center px-0.5 btn-disabled" title="Rehacer (Ctrl+Y)"><span class="material-symbols-outlined text-base">redo</span></button>
                 </div>
             </div>
-            <div class="chart-card">
-                <div class="chart-header">
-                    <span id="titleInc">Ingresos por Categoría</span>
-                    <button onclick="resetChart('inc')" id="resetInc" style="border:none; background:none; color:var(--accent); font-size:9px; display:none;">VOLVER</button>
-                </div>
-                <div class="chart-body">
-                    <div class="donut-container"><canvas id="chartInc"></canvas></div>
-                    <div class="legend-container" id="legInc"></div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div id="view-settings" class="view-section" style="padding:15px; overflow-y:auto;">
-        <div class="settings-group">
-            <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
-                <span class="inp-lbl">Gastos Recurrentes</span>
-                <span style="color:var(--accent); font-size:10px; font-weight:700; cursor:pointer;" onclick="addRecurrenteUI()">+ Agregar</span>
-            </div>
-            <div id="list-recurrentes"></div>
-            <button onclick="populateRecurringDefaults()" style="width:100%; padding:8px; background:white; border:1px solid var(--border); border-radius:8px; font-size:9px; font-weight:700; color:var(--txt-sec); margin-top:5px;">Analizar Historial (3M)</button>
-        </div>
-        
-        <div class="settings-group">
-            <div class="inp-lbl">Categorías</div>
-            <div id="admin-tree"></div>
-        </div>
-
-        <div class="settings-group">
-            <div class="inp-lbl">Herramientas</div>
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
-                <button onclick="executeRecurrentes()" style="padding:10px; background:white; border:1px solid var(--border); border-radius:8px; font-size:9px; font-weight:700;">Ejecutar Recurrentes</button>
-                <button onclick="openCloneModal()" style="padding:10px; background:white; border:1px solid var(--border); border-radius:8px; font-size:9px; font-weight:700;">Clonar Mes...</button>
-                <button onclick="forceSync()" style="grid-column:span 2; padding:10px; background:white; border:1px solid var(--border); border-radius:8px; font-size:10px; font-weight:700; color:var(--primary);">Sincronizar Nube (Forzado)</button>
-                <button id="btnCloseMonth" onclick="toggleMonthClose()" style="grid-column:span 2; padding:10px; background:#1E293B; border-radius:8px; font-size:9px; font-weight:700; color:white;">Cerrar Mes</button>
-                <button onclick="clearMonth()" style="grid-column:span 2; padding:10px; background:#FEF2F2; border:1px solid #FECACA; border-radius:8px; font-size:9px; font-weight:700; color:#EF4444;">Borrar Todo el Mes</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="bottom-nav">
-    <button class="nav-btn active" id="nav-home" onclick="nav('home')"><i class="fas fa-wallet"></i><span>Home</span></button>
-    <button class="nav-btn" id="nav-networth" onclick="nav('networth')"><i class="fas fa-landmark"></i><span>Patrim.</span></button>
-    <div class="fab" onclick="openNewTx()"><i class="fas fa-plus"></i></div>
-    <button class="nav-btn" id="nav-stats" onclick="nav('stats')"><i class="fas fa-chart-pie"></i><span>Stats</span></button>
-    <button class="nav-btn" id="nav-settings" onclick="nav('settings')"><i class="fas fa-cog"></i><span>Ajustes</span></button>
-</div>
-
-<div class="sheet" id="sheet" onclick="if(event.target===this) closeSheet()">
-    <div class="sheet-box">
-        <form id="txForm">
-            <div style="display:flex; gap:10px;">
-                <input type="number" inputmode="decimal" id="fAmount" class="big-inp" placeholder="0" step="0.01" required>
-                <select id="fCurr" style="width:70px; margin-bottom:8px; background:#E2E8F0; border:none; border-radius:10px; font-weight:700; text-align:center; font-size:12px;">
-                    <option value="ARS">ARS</option>
-                    <option value="USD">USD</option>
-                    <option value="COP">COP</option>
-                </select>
-            </div>
-            <div class="tabs-pill" style="margin-bottom:12px;">
-                <div class="tab-btn active" id="seg-exp" onclick="setType('exp')">Gasto</div>
-                <div class="tab-btn" id="seg-inc" onclick="setType('inc')">Ingreso</div>
-                <div class="tab-btn" id="seg-trf" onclick="setType('transfer')">Transf.</div>
-            </div>
-            <input type="hidden" id="fType" value="exp">
             
-            <div id="splitWarning" style="display:none; background:#EEF2FF; border:1px dashed #6366F1; padding:8px; border-radius:8px; margin-bottom:10px; font-size:10px; color:#312E81;">
-                <i class="fas fa-info-circle"></i> <b>Es un Split (Dividido)</b><br>
-                Los items se preservarán. Solo puedes editar fecha, ejecutado y totales aquí.
-                <div id="splitList" style="margin-top:5px; padding-left:10px; font-size:9px; opacity:0.8;"></div>
-            </div>
-
-            <div id="acc-selectors" style="display:flex; gap:10px; margin-bottom:10px;">
-                 <div style="flex:1; display:none;" id="div-from">
-                     <span class="inp-lbl">ORIGEN</span>
-                     <select id="fFromAcc" class="sel-acc"></select>
-                 </div>
-                 <div style="flex:1; display:none;" id="div-to">
-                     <span class="inp-lbl">DESTINO</span>
-                     <select id="fToAcc" class="sel-acc"></select>
-                 </div>
-            </div>
-
-            <div id="div-cat" style="margin-bottom:12px;">
-                <span class="inp-lbl">CATEGORÍA</span>
-                <div class="chip-container" id="catChips"></div>
-                <input type="hidden" id="fCat">
-            </div>
-
-            <div id="div-desc" style="margin-bottom:12px;">
-                <span class="inp-lbl">CONCEPTO</span>
-                <div class="chip-container" id="conChips"></div>
-                <input type="text" id="fCustomDesc" class="big-inp" style="font-size:14px; text-align:left; display:none; background:white; border:1px solid var(--border);" placeholder="Nombre...">
-                <input type="hidden" id="fConcept">
-            </div>
-
-            <div id="linkSection" style="margin-bottom:12px;">
-                <span class="inp-lbl" style="color:var(--accent);">VINCULAR A INGRESO</span>
-                <div class="chip-container" id="linkChips"></div>
-                <input type="hidden" id="fLink">
-            </div>
-
-            <div style="display:flex; gap:10px; margin-bottom:15px; align-items:flex-end;">
-                <div style="flex-grow:1;">
-                    <span class="inp-lbl">FECHA</span>
-                    <input type="date" id="fDate" style="width:100%; padding:10px; border:1px solid var(--border); border-radius:8px; background:#F8FAFC; font-size:12px;" required>
+            <div class="flex items-center gap-2 bg-white px-2 rounded border border-slate-200 shadow-sm h-7 shrink-0">
+                <span class="material-symbols-outlined text-slate-400 text-xs">currency_exchange</span>
+                <div class="flex items-center gap-1 border-r border-slate-100 pr-2 h-full">
+                    <span class="text-[9px] font-bold text-slate-400">USD</span>
+                    <input type="number" id="rate_ARS" onchange="pushHistory(); saveMonthlyRates(); renderNetWorthView()" class="tc-input" placeholder="0">
                 </div>
-                <div style="flex-shrink:0; display:flex; flex-direction:column; align-items:flex-end;">
-                     <span class="inp-lbl">EJECUTADO</span>
-                     <div style="height:37px; display:flex; align-items:center;">
-                        <label class="switch">
-                          <input type="checkbox" id="fExec">
-                          <span class="slider"></span>
-                        </label>
+                <div class="flex items-center gap-1 h-full">
+                    <span class="text-[9px] font-bold text-slate-400">COP</span>
+                    <input type="number" id="rate_COP" step="0.01" onchange="pushHistory(); saveMonthlyRates(); renderNetWorthView()" class="tc-input" placeholder="0">
+                </div>
+            </div>
+        </header>
+
+        <div id="view-dashboard" class="view-container animate-fade-in flex flex-col flex-1 min-h-0 gap-2 relative">
+             <div id="dashboardAlerts" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 shrink-0 empty:hidden"></div>
+            
+            <section class="grid grid-cols-4 gap-2 shrink-0">
+                <div class="glass-panel px-3 py-2 rounded-lg flex flex-col justify-center">
+                    <p class="text-[8px] font-bold text-slate-400 uppercase tracking-wider">Balance Neto</p>
+                    <h3 class="text-base font-black text-slate-800 tracking-tight leading-tight" id="k-bal">$0</h3>
+                </div>
+                <div class="glass-panel px-3 py-2 rounded-lg flex flex-col justify-center">
+                    <p class="text-[8px] font-bold text-slate-400 uppercase tracking-wider">Estimado USD</p>
+                    <h3 class="text-sm font-bold text-primary leading-tight" id="k-usd">$0</h3>
+                </div>
+                <div class="glass-panel px-3 py-2 rounded-lg flex flex-col justify-center border-l-2 border-l-success">
+                    <p class="text-[8px] font-bold text-slate-400 uppercase tracking-wider">Ingresos</p>
+                    <h3 class="text-sm font-bold text-success leading-tight" id="k-inc">$0</h3>
+                </div>
+                <div class="glass-panel px-3 py-2 rounded-lg flex flex-col justify-center border-l-2 border-l-danger">
+                    <p class="text-[8px] font-bold text-slate-400 uppercase tracking-wider">Gastos</p>
+                    <h3 class="text-sm font-bold text-danger leading-tight" id="k-exp">$0</h3>
+                </div>
+            </section>
+
+            <div class="grid grid-cols-1 xl:grid-cols-3 gap-2 flex-1 min-h-0">
+                <section class="flex flex-col glass-panel rounded-lg overflow-hidden h-full">
+                    <div class="flex items-center justify-between px-2 py-1.5 border-b border-slate-100 bg-slate-50/50 shrink-0 h-8">
+                        <h4 class="text-[10px] font-bold text-slate-700 flex items-center gap-1"><span class="material-symbols-outlined text-success text-xs">arrow_circle_up</span> Ingresos</h4>
+                        <span class="bg-success/10 text-success text-[9px] font-bold px-1.5 rounded-full" id="c-inc">0</span>
+                    </div>
+                    <div class="flex-1 overflow-y-auto custom-scrollbar p-0" id="list-inc"></div>
+                </section>
+                
+                <section class="flex flex-col glass-panel rounded-lg overflow-hidden h-full">
+                    <div class="flex items-center justify-between px-2 py-1.5 border-b border-slate-100 bg-slate-50/50 shrink-0 h-8">
+                        <div class="flex items-center gap-2 flex-1 mr-2">
+                            <h4 class="text-[10px] font-bold text-slate-700 flex items-center gap-1 shrink-0">
+                                <span class="material-symbols-outlined text-danger text-xs">arrow_circle_down</span> Gastos
+                            </h4>
+                            <input type="text" id="searchExpInput" oninput="filterExpList()" placeholder="Buscar..." class="w-full max-w-[100px] bg-white border-none text-[9px] rounded px-2 py-0.5 focus:ring-1 focus:ring-primary shadow-sm h-5">
+                        </div>
+                        <div class="flex items-center gap-1">
+                             <button onclick="toggleSelectionMode()" id="btnSelectMode" class="text-slate-400 hover:text-primary transition-colors p-0.5 rounded hover:bg-slate-100" title="Selección Múltiple">
+                                <span class="material-symbols-outlined text-base">check_box</span>
+                             </button>
+                             <span class="bg-danger/10 text-danger text-[9px] font-bold px-1.5 rounded-full" id="c-exp">0</span>
+                        </div>
+                    </div>
+                    <div class="flex-1 overflow-y-auto custom-scrollbar p-0" id="list-exp"></div>
+                </section>
+
+                <section class="flex flex-col glass-panel rounded-lg overflow-hidden h-full">
+                    <div class="flex items-center justify-between px-2 py-1.5 border-b border-slate-100 bg-slate-50/50 shrink-0 h-8">
+                        <h4 class="text-[10px] font-bold text-slate-700 flex items-center gap-1"><span class="material-symbols-outlined text-primary text-xs">pie_chart</span> Asignación</h4>
+                    </div>
+                    <div class="px-2 py-1 flex justify-between gap-2 border-b border-slate-100 bg-white items-center h-7" id="allocControls">
+                        <button onclick="autoAssign()" class="text-[9px] font-bold text-slate-500 hover:text-primary transition-colors flex items-center gap-1">
+                            <span class="material-symbols-outlined text-[10px]">auto_fix_high</span> Auto
+                        </button>
+                        <button onclick="unassignAll()" class="text-[9px] font-bold text-slate-400 hover:text-red-500 transition-colors flex items-center gap-1">
+                            <span class="material-symbols-outlined text-[10px]">link_off</span> Reset
+                        </button>
+                    </div>
+                    <div class="flex-1 overflow-y-auto custom-scrollbar p-1 flex flex-col gap-1" id="list-alloc"></div>
+                </section>
+            </div>
+
+            <div id="bulkBar" class="hidden fixed bottom-4 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-4 py-2 rounded-xl shadow-xl flex items-center gap-4 z-50 animate-fade-in ring-1 ring-white/10">
+                <div class="flex flex-col">
+                    <span class="text-[10px] font-bold" id="bulkCount">0</span>
+                    <button onclick="selectAllVisible()" class="text-[9px] text-slate-400 hover:text-white underline">Todos</button>
+                </div>
+                <div class="h-6 w-px bg-slate-600"></div>
+                <div class="flex items-center gap-2">
+                    <button onclick="openBulkModal()" class="flex items-center gap-1 text-[10px] font-bold bg-white/10 hover:bg-white/20 px-2 py-1 rounded transition-all">
+                        <span class="material-symbols-outlined text-xs">edit</span> Editar
+                    </button>
+                    <button onclick="bulkDelete()" class="flex items-center gap-1 text-[10px] font-bold bg-red-500/20 hover:bg-red-500/40 text-red-300 px-2 py-1 rounded transition-all">
+                        <span class="material-symbols-outlined text-xs">delete</span>
+                    </button>
+                </div>
+                <button onclick="toggleSelectionMode()" class="text-slate-400 hover:text-white"><span class="material-symbols-outlined text-sm">close</span></button>
+            </div>
+        </div>
+
+        <div id="view-networth" class="view-container animate-fade-in hidden-view flex flex-col flex-1 min-h-0 gap-2 relative">
+            <section class="grid grid-cols-4 gap-2 shrink-0">
+                <div class="glass-panel px-3 py-2 rounded-lg flex flex-col justify-center border-l-2 border-l-primary">
+                    <p class="text-[8px] font-bold text-slate-400 uppercase tracking-wider">Patrimonio Neto</p>
+                    <h3 class="text-base font-black text-slate-800 tracking-tight" id="nw-total">$0</h3>
+                </div>
+                <div class="glass-panel px-3 py-2 rounded-lg flex flex-col justify-center">
+                    <p class="text-[8px] font-bold text-slate-400 uppercase tracking-wider">En Dólares</p>
+                    <h3 class="text-sm font-bold text-primary" id="nw-usd">$0</h3>
+                </div>
+                <div class="glass-panel px-3 py-2 rounded-lg flex flex-col justify-center">
+                    <p class="text-[8px] font-bold text-slate-400 uppercase tracking-wider">Activos</p>
+                    <h3 class="text-sm font-bold text-success" id="nw-assets">$0</h3>
+                </div>
+                <div class="glass-panel px-3 py-2 rounded-lg flex flex-col justify-center">
+                    <p class="text-[8px] font-bold text-slate-400 uppercase tracking-wider">Pasivos</p>
+                    <h3 class="text-sm font-bold text-danger" id="nw-liabs">$0</h3>
+                </div>
+            </section>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-2 flex-1 min-h-0">
+                <div class="lg:col-span-2 glass-panel rounded-lg p-3 flex flex-col">
+                    <h3 class="text-[10px] font-bold text-slate-700 mb-2">Evolución</h3>
+                    <div class="flex-1 min-h-0 relative"><canvas id="chartNetWorth"></canvas></div>
+                </div>
+                <div class="flex flex-col gap-2 h-full overflow-hidden">
+                    <div class="glass-panel rounded-lg p-3 flex flex-col h-1/3 min-h-[140px]">
+                         <h3 class="text-[10px] font-bold text-slate-700 mb-2">Composición</h3>
+                         <div class="flex-1 min-h-0 relative"><canvas id="chartNWComp"></canvas></div>
+                    </div>
+                    <div class="glass-panel rounded-lg flex flex-col overflow-hidden flex-1">
+                        <div class="flex items-center justify-between px-2 py-2 border-b border-slate-100 bg-slate-50/50">
+                            <h4 class="text-[10px] font-bold text-slate-700">Cuentas</h4>
+                            <button onclick="openAccountModal()" class="text-[9px] font-bold text-primary hover:bg-primary/10 px-2 py-0.5 rounded transition-colors">+ CUENTA</button>
+                        </div>
+                        <div class="flex-1 overflow-y-auto custom-scrollbar p-0" id="list-accounts"></div>
                     </div>
                 </div>
             </div>
+        </div>
 
-            <button type="submit" style="width:100%; padding:14px; background:var(--primary); color:white; font-weight:800; border-radius:10px; border:none; margin-bottom:8px;">GUARDAR</button>
-            <button type="button" id="btnDel" onclick="delTx()" style="width:100%; color:#EF4444; background:none; border:none; font-weight:700; font-size:12px; display:none;">Eliminar</button>
-        </form>
-    </div>
-</div>
+        <div id="view-analytics" class="view-container animate-fade-in hidden-view grid grid-cols-1 lg:grid-cols-2 gap-3 flex-1 min-h-0">
+             <div id="analyticsAlerts" class="col-span-1 lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-2 empty:hidden"></div>
+            <div class="glass-panel rounded-lg p-3 flex flex-col h-[320px]">
+                <div class="flex justify-between items-center mb-2"><h3 class="text-[10px] font-bold text-slate-700">Gastos por Categoría</h3><button onclick="resetCharts()" class="text-[9px] text-primary font-bold hover:underline hidden" id="resetBtn">VOLVER</button></div>
+                <div class="flex items-center gap-3 flex-1 min-h-0 overflow-hidden"><div class="relative h-[180px] w-[180px] shrink-0"><canvas id="chartExp"></canvas></div><div class="flex-1 h-full overflow-y-auto custom-scrollbar pr-1" id="legExp"></div></div>
+            </div>
+            <div class="glass-panel rounded-lg p-3 flex flex-col h-[320px]">
+                <div class="flex justify-between items-center mb-2"><h3 class="text-[10px] font-bold text-slate-700">Ingresos por Concepto</h3></div>
+                <div class="flex items-center gap-3 flex-1 min-h-0 overflow-hidden"><div class="relative h-[180px] w-[180px] shrink-0"><canvas id="chartInc"></canvas></div><div class="flex-1 h-full overflow-y-auto custom-scrollbar pr-1" id="legInc"></div></div>
+            </div>
+        </div>
 
-<div class="sheet" id="sheetAcc" onclick="if(event.target===this) closeAccSheet()">
-    <div class="sheet-box">
-        <h3 style="margin-top:0; margin-bottom:15px; font-size:16px;">Cuenta / Activo</h3>
-        <form id="accForm" onsubmit="saveAccount(event)">
-            <input type="text" id="accName" class="big-inp" style="text-align:left; font-size:16px;" placeholder="Nombre (ej: Banco Galicia)" required>
-            <div style="display:flex; gap:10px; margin-bottom:10px;">
-                <div style="flex:1;">
-                    <span class="inp-lbl">TIPO</span>
-                    <select id="accType" class="sel-acc" style="margin:0;"></select>
+        <div id="view-admin" class="view-container animate-fade-in hidden-view grid grid-cols-1 lg:grid-cols-2 gap-4 flex-1 min-h-0 pt-1">
+            <div class="glass-panel rounded-xl flex flex-col h-full overflow-hidden shadow-sm border border-slate-200">
+                <div class="p-4 border-b border-slate-100 bg-white/50 backdrop-blur-sm z-10">
+                    <div class="flex items-center gap-2 mb-3">
+                        <div class="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg">
+                            <span class="material-symbols-outlined text-lg">category</span>
+                        </div>
+                        <h3 class="text-sm font-bold text-slate-800">Categorías y Conceptos</h3>
+                    </div>
+                    <div class="flex gap-2 p-1 bg-slate-100 rounded-lg border border-slate-200">
+                        <div class="relative flex-1">
+                            <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 material-symbols-outlined text-sm">add_circle</span>
+                            <input type="text" id="newCatName" placeholder="Nueva Categoría..." class="w-full pl-8 pr-2 py-1.5 bg-white border-none rounded-md text-[11px] font-bold focus:ring-2 focus:ring-primary/20 shadow-sm text-slate-700 placeholder:font-medium">
+                        </div>
+                        <select id="newCatType" class="bg-white border-none rounded-md text-[10px] font-bold px-3 py-0 text-slate-600 shadow-sm focus:ring-0 cursor-pointer hover:bg-slate-50">
+                            <option value="exp">Gasto</option>
+                            <option value="inc">Ingreso</option>
+                        </select>
+                        <button onclick="manualAddCat()" class="bg-slate-800 text-white w-8 rounded-md hover:bg-slate-700 flex items-center justify-center shadow-sm transition-all active:scale-95">
+                            <span class="material-symbols-outlined text-sm">check</span>
+                        </button>
+                    </div>
                 </div>
-                <div style="flex:1;">
-                     <span class="inp-lbl">CLASE</span>
-                     <select id="accKind" class="sel-acc" style="margin:0;">
-                          <option value="asset">Activo</option>
-                          <option value="liability">Pasivo (Deuda)</option>
-                     </select>
+                <div class="flex-1 overflow-y-auto custom-scrollbar p-3 bg-slate-50/50" id="adminTreeContainer"></div>
+            </div>
+
+            <div class="flex flex-col gap-4 h-full overflow-hidden">
+                <div class="glass-panel rounded-xl flex flex-col flex-1 overflow-hidden shadow-sm border border-slate-200">
+                    <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-white/50 backdrop-blur-sm z-10">
+                        <div class="flex items-center gap-2">
+                            <div class="p-1.5 bg-orange-50 text-orange-600 rounded-lg">
+                                <span class="material-symbols-outlined text-lg">update</span>
+                            </div>
+                            <h3 class="text-sm font-bold text-slate-800">Gastos Fijos</h3>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="populateRecurringDefaults()" class="text-slate-500 hover:text-primary px-3 py-1.5 rounded-lg text-[10px] font-bold transition-colors bg-slate-100 hover:bg-primary/5 border border-transparent hover:border-primary/20 flex items-center gap-1">
+                                <span class="material-symbols-outlined text-xs">lightbulb</span> Sugerir
+                            </button>
+                            <button onclick="addRecurrenteRow()" class="bg-slate-800 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold hover:bg-slate-700 shadow-sm flex items-center gap-1 transition-all active:scale-95">
+                                <span class="material-symbols-outlined text-xs">add</span> Agregar
+                            </button>
+                        </div>
+                    </div>
+                    <div class="flex-1 overflow-y-auto custom-scrollbar p-2 bg-slate-50/30" id="recurrente-table-body"></div>
+                    <div class="p-3 border-t border-slate-100 bg-white z-10">
+                        <div class="flex gap-3">
+                            <button onclick="saveRecurrentesConfig()" class="flex-1 py-2.5 rounded-lg border border-slate-200 text-slate-600 text-[10px] font-bold hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm">
+                                GUARDAR CAMBIOS
+                            </button>
+                            <button onclick="executeRecurrentes()" class="flex-1 py-2.5 rounded-lg bg-primary text-white text-[10px] font-bold hover:bg-primary-dark shadow-md hover:shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2">
+                                <span class="material-symbols-outlined text-sm">play_arrow</span> EJECUTAR MES
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="glass-panel rounded-xl p-4 shadow-sm border border-slate-200 shrink-0">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-2">
+                            <div class="p-1.5 bg-slate-100 text-slate-600 rounded-lg">
+                                <span class="material-symbols-outlined text-lg">lock_clock</span>
+                            </div>
+                            <div>
+                                <h4 class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Estado del Mes</h4>
+                                <div id="monthStatusBadge" class="inline-flex mt-0.5 text-[10px] font-black px-2 py-0.5 rounded-md bg-slate-200 text-slate-500">ABIERTO</div>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                             <p class="text-[9px] font-bold text-slate-400 uppercase">Balance Cierre</p>
+                             <p class="text-base font-black text-slate-800 tracking-tight" id="monthCloseBalance">...</p>
+                        </div>
+                    </div>
+                    <div id="monthActionContainer" class="w-full"></div>
                 </div>
             </div>
-            <div style="display:flex; gap:10px; margin-bottom:10px;">
-                <div style="flex:1;">
-                    <span class="inp-lbl">MONEDA</span>
-                    <select id="accCurr" class="sel-acc" style="margin:0;">
-                         <option value="ARS">ARS</option>
-                         <option value="USD">USD</option>
-                         <option value="COP">COP</option>
-                    </select>
-                </div>
-                <div style="flex:1;">
-                     <span class="inp-lbl">SALDO INICIAL</span>
-                     <input type="number" inputmode="decimal" id="accInit" class="sel-acc" style="margin:0;" placeholder="0" step="0.01">
-                </div>
-            </div>
-            <div style="margin-bottom:15px;">
-                <span class="inp-lbl">FECHA DE ALTA (CREACIÓN)</span>
-                <input type="date" id="accDate" style="width:100%; padding:10px; border:1px solid var(--border); border-radius:8px; background:#F8FAFC; font-size:12px;" required>
-            </div>
-            <button type="submit" style="width:100%; padding:14px; background:var(--primary); color:white; font-weight:800; border-radius:10px; border:none; margin-bottom:8px;">GUARDAR CUENTA</button>
-            <button type="button" id="btnDelAcc" onclick="delAccount()" style="width:100%; color:#EF4444; background:none; border:none; font-weight:700; font-size:12px; display:none;">Eliminar</button>
-        </form>
-    </div>
-</div>
+        </div>
+    </main>
 
-<div class="modal-overlay" id="modalClone">
-    <div class="modal-center">
-        <h3 style="margin-top:0; margin-bottom:10px;">Clonar Mes</h3>
-        <p style="font-size:11px; color:#666; margin-bottom:15px;">Selecciona el mes origen para copiar sus movimientos.</p>
-        <select id="selCloneSrc" style="width:100%; padding:10px; margin-bottom:20px; border:1px solid #ccc; border-radius:8px;"></select>
-        <div style="display:flex; gap:10px;">
-            <button onclick="document.getElementById('modalClone').classList.remove('open')" style="flex:1; padding:10px; border:none; background:#eee; border-radius:8px; font-weight:700;">Cancelar</button>
-            <button onclick="doCloneMonth()" style="flex:1; padding:10px; border:none; background:var(--primary); color:white; border-radius:8px; font-weight:700;">Clonar</button>
+    <button id="fabNew" onclick="openModal()" class="fixed bottom-5 right-5 size-10 bg-slate-900 text-white rounded-xl shadow-lg shadow-slate-900/30 flex items-center justify-center hover:scale-105 active:scale-95 transition-all z-50">
+        <span class="material-symbols-outlined text-xl">add</span>
+    </button>
+
+    <div id="modalOverlay" class="fixed inset-0 z-[60] hidden flex items-center justify-center bg-slate-900/60 backdrop-blur-sm">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-[340px] max-h-[90vh] overflow-hidden flex flex-col mx-4 animate-fade-in">
+            <div class="p-3 flex justify-between items-center border-b pb-2 bg-slate-50">
+                <h1 class="text-sm font-bold text-slate-800" id="mTitle">Nuevo</h1>
+                <button onclick="closeModal()" class="size-6 flex items-center justify-center rounded-full hover:bg-slate-200 text-slate-400 transition-colors">
+                    <span class="material-symbols-outlined text-sm">close</span>
+                </button>
+            </div>
+            <form id="txForm" class="p-4 overflow-y-auto custom-scrollbar">
+                <div class="grid grid-cols-3 p-1 bg-slate-100 rounded-lg mb-3 gap-1">
+                    <button type="button" id="btnExp" onclick="setType('exp')" class="py-1.5 rounded-md text-[10px] font-bold transition-all shadow-sm bg-white text-danger border border-slate-100">Gasto</button>
+                    <button type="button" id="btnInc" onclick="setType('inc')" class="py-1.5 rounded-md text-[10px] font-bold transition-all text-slate-400 hover:text-slate-600">Ingreso</button>
+                    <button type="button" id="btnTrf" onclick="setType('transfer')" class="py-1.5 rounded-md text-[10px] font-bold transition-all text-slate-400 hover:text-slate-600">Transf.</button>
+                </div>
+                <input type="hidden" id="fType" value="exp">
+
+                <div class="flex gap-2 mb-3">
+                    <div class="flex-1 relative">
+                        <span class="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 font-light text-base">$</span>
+                        <input type="number" id="fAmt" step="0.01" class="w-full pl-5 pr-2 py-2 bg-slate-50 border-1 border-slate-100 focus:bg-white focus:border-primary rounded-lg text-base font-bold text-slate-800 outline-none text-right" placeholder="0" required oninput="calcConversion();calcSplitDiff()">
+                    </div>
+                    <div class="w-16">
+                        <select id="fCurr" onchange="calcConversion()" class="w-full h-full bg-slate-100 border-transparent rounded-lg text-[10px] font-bold focus:border-primary focus:ring-0 text-center pl-0 pr-4">
+                            <option value="ARS">ARS</option><option value="USD">USD</option><option value="COP">COP</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="convPreview" class="hidden text-right text-[9px] text-slate-500 font-medium -mt-1 mb-2 bg-slate-50 px-1 rounded inline-block float-right">
+                    = <span id="convResult" class="text-slate-800 font-bold">$0</span>
+                </div>
+                <div class="clear-both"></div>
+
+                <div class="mb-2">
+                    <input type="date" id="fDate" class="w-full px-2 py-1.5 bg-slate-50 border-none rounded-lg text-xs font-medium focus:ring-1 focus:ring-primary" required>
+                </div>
+                
+                <div class="mb-2 hidden" id="divFromAcc">
+                    <label class="block text-[9px] font-bold text-slate-400 uppercase mb-0.5 ml-1">Origen</label>
+                    <select id="fFromAcc" class="w-full px-2 py-1.5 bg-slate-50 border-none rounded-lg text-[10px] focus:ring-1 focus:ring-primary text-slate-700 font-medium"></select>
+                </div>
+                 <div class="mb-2 hidden" id="divToAcc">
+                    <label class="block text-[9px] font-bold text-slate-400 uppercase mb-0.5 ml-1">Destino</label>
+                    <select id="fToAcc" class="w-full px-2 py-1.5 bg-slate-50 border-none rounded-lg text-[10px] focus:ring-1 focus:ring-primary text-slate-700 font-medium"></select>
+                </div>
+
+                <div class="mb-2 hidden" id="divSplitToggle">
+                     <label class="flex items-center gap-2 cursor-pointer mb-1 bg-slate-50 p-1.5 rounded-lg border border-slate-100">
+                        <input type="checkbox" id="fIsSplit" onchange="toggleSplitUI()" class="size-3 rounded text-primary focus:ring-primary border-slate-300">
+                        <span class="text-[9px] font-bold text-slate-600 uppercase">Dividir en categorías</span>
+                     </label>
+                </div>
+
+                <div id="normalTxFields">
+                    <div class="mb-2" id="divCat">
+                        <label class="block text-[9px] font-bold text-slate-400 uppercase mb-0.5 ml-1">Categoría</label>
+                        <div class="flex flex-wrap gap-1" id="chipBox"></div>
+                        <input type="hidden" id="fCat">
+                    </div>
+                    <div class="mb-2">
+                        <label class="block text-[9px] font-bold text-slate-400 uppercase mb-0.5 ml-1" id="lblDesc">Concepto</label>
+                        <div class="flex flex-wrap gap-1 mb-1" id="conceptBox"></div>
+                        <input type="text" id="fDesc" class="w-full px-2 py-1.5 bg-slate-50 border-none rounded-lg text-[10px] focus:ring-1 focus:ring-primary placeholder:text-slate-300" placeholder="Detalle...">
+                    </div>
+                </div>
+
+                <div id="splitContainer" class="hidden mb-3 bg-slate-50 p-2 rounded-lg border border-slate-100">
+                    <div id="splitRows" class="space-y-1"></div>
+                    <button type="button" onclick="addSplitRow()" class="mt-1 w-full py-1.5 border border-dashed border-primary/30 text-primary text-[9px] font-bold rounded hover:bg-primary/5">+ Item</button>
+                    <div class="flex justify-between mt-1 text-[9px] font-bold px-1">
+                        <span class="text-slate-500">Diferencia:</span>
+                        <span id="splitDiffVal" class="text-success">$0</span>
+                    </div>
+                </div>
+
+                <div class="mb-3" id="linkRow">
+                    <label class="block text-[9px] font-bold text-primary uppercase mb-0.5 ml-1">Fuente (Ingreso)</label>
+                    <div id="linkChipsContainer" class="flex flex-wrap gap-1"></div>
+                    <input type="hidden" id="fLink">
+                </div>
+
+                <div class="flex items-center gap-2 mb-4 p-2 border border-slate-100 rounded-lg bg-slate-50/50 hover:bg-slate-50 transition-colors cursor-pointer" onclick="document.getElementById('fExec').click()">
+                    <input type="checkbox" id="fExec" class="size-3.5 text-primary rounded border-slate-300 focus:ring-primary bg-white">
+                    <span class="block text-[10px] font-bold text-slate-700 select-none">Ejecutado (Pagado)</span>
+                </div>
+
+                <div class="flex flex-col gap-2">
+                    <button type="submit" class="w-full py-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow active:scale-95 transition-all">GUARDAR</button>
+                    <button type="button" id="btnDel" onclick="delTx()" class="text-[9px] text-red-500 font-bold hover:bg-red-50 py-1.5 rounded transition-colors hidden">Eliminar</button>
+                </div>
+            </form>
         </div>
     </div>
-</div>
 
-<script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbysU6jUmCwhy5hdpb3Q7x3uZqKkRcgV4tsz0T85pXsn26o5Ce39qEBB6bNapm9llQMC/exec";
-    const MONTHS = ["ENE","FEB","MAR","ABR","MAY","JUN","JUL","AGO","SEP","OCT","NOV","DIC"];
-    const PALETTE = ['#3B82F6','#10B981','#F59E0B','#EF4444','#8B5CF6','#64748B','#EC4899','#14B8A6'];
-    
-    // UNIFIED STORAGE KEY - THIS IS CRITICAL
-    const STORAGE_KEY = 'finance_unified_javi';
+    <div id="accModal" class="fixed inset-0 z-[65] hidden flex items-center justify-center bg-slate-900/60 backdrop-blur-sm">
+        <div class="relative z-10 w-full max-w-[280px] bg-white rounded-xl shadow-2xl p-4 animate-fade-in mx-4">
+            <h3 class="text-sm font-bold text-slate-800 mb-3 border-b border-slate-100 pb-2">Cuenta</h3>
+            <form id="accForm" onsubmit="saveAccount(event)">
+                <input type="hidden" id="accId">
+                <div class="mb-2">
+                    <label class="block text-[9px] font-bold text-slate-400 uppercase mb-1">Nombre</label>
+                    <input type="text" id="accName" class="w-full px-2 py-1.5 bg-slate-50 border-none rounded text-xs font-bold focus:ring-1 focus:ring-primary" required>
+                </div>
+                <div class="grid grid-cols-2 gap-2 mb-2">
+                    <select id="accKind" class="w-full bg-slate-50 border-none rounded text-[10px] py-1.5"><option value="asset">Activo</option><option value="liability">Pasivo</option></select>
+                    <select id="accCurr" class="w-full bg-slate-50 border-none rounded text-[10px] py-1.5"><option value="ARS">ARS</option><option value="USD">USD</option><option value="COP">COP</option></select>
+                </div>
+                <div class="mb-3">
+                     <label class="block text-[9px] font-bold text-slate-400 uppercase mb-1">Saldo Inicial</label>
+                     <input type="number" id="accInit" step="0.01" class="w-full px-2 py-1.5 bg-slate-50 border-none rounded text-xs font-bold focus:ring-1 focus:ring-primary" placeholder="0">
+                </div>
+                <div class="flex gap-2">
+                    <button type="submit" class="flex-1 bg-slate-800 text-white py-1.5 rounded text-[10px] font-bold hover:bg-slate-700">Guardar</button>
+                    <button type="button" onclick="closeAccountModal()" class="flex-1 border border-slate-200 text-slate-500 py-1.5 rounded text-[10px] font-bold hover:bg-slate-50">Cancelar</button>
+                </div>
+                 <button type="button" id="btnDelAcc" onclick="deleteAccount()" class="w-full mt-2 text-[9px] text-red-400 hover:text-red-600 font-bold hidden">Eliminar</button>
+            </form>
+        </div>
+    </div>
 
-    let data = { 
-        txs: [], 
-        accounts: [],
-        accountCats: ['Efectivo', 'Banco', 'Inversiones', 'Cripto', 'Tarjeta', 'Otro'],
-        cats: { exp:['Esenciales','Varios'], inc:['Sueldo'] }, 
-        concepts: {}, 
-        recurrentes: [], 
-        monthlyRates: {},
-        closedMonths: {} 
-    };
-    
-    let currentTxs = [], editId = null, editAccId = null;
-    let drillCatExp = null, drillCatInc = null;
-    let tempCat='', tempLink='';
-    let currentDate = new Date(); currentDate.setDate(1);
-    let saveTimer = null;
+    <div id="bulkModal" class="fixed inset-0 z-[70] hidden flex items-center justify-center bg-slate-900/60 backdrop-blur-sm">
+        <div class="bg-white rounded-xl p-4 w-full max-w-[280px] shadow-2xl mx-4">
+            <h3 class="text-xs font-bold text-slate-800 mb-3 border-b pb-2">Acciones Masivas</h3>
+            <div class="space-y-2">
+                <div>
+                    <label class="text-[9px] font-bold text-slate-400 uppercase">Cambiar Categoría</label>
+                    <select id="bulkCatSelect" class="w-full mt-0.5 border-slate-200 rounded text-[10px] py-1"></select>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="bulkSetExec(true)" class="py-1.5 bg-emerald-50 text-emerald-700 text-[9px] font-bold rounded border border-emerald-100 hover:bg-emerald-100">Pagado</button>
+                    <button onclick="bulkSetExec(false)" class="py-1.5 bg-slate-50 text-slate-600 text-[9px] font-bold rounded border border-slate-100 hover:bg-slate-100">Pendiente</button>
+                </div>
+                <div>
+                    <label class="text-[9px] font-bold text-slate-400 uppercase">Vincular a Ingreso</label>
+                    <select id="bulkLinkSelect" class="w-full mt-0.5 border-slate-200 rounded text-[10px] py-1"></select>
+                </div>
+                <button onclick="bulkApplyChanges()" class="w-full py-2 bg-primary text-white rounded-lg font-bold mt-2 shadow hover:bg-primary-dark text-xs">APLICAR</button>
+                <button onclick="closeBulkModal()" class="w-full text-[9px] font-bold text-slate-400 py-1 hover:text-slate-600">CANCELAR</button>
+            </div>
+        </div>
+    </div>
 
-    let editingSplitChildren = null; 
+    <script>
+        // =========================================================================
+        // CONFIGURACIÓN Y ESTADO GLOBAL
+        // =========================================================================
+        const API_URL = "https://script.google.com/macros/s/AKfycbxEni9GJ4gxmbhmNsbzoYxS_SfhcorqsXj4zh93-qWIy5i2R4jwvgJ8L25GcU3h3Bkh/exec";
+        const MONTHS = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+        const PALETTE = ['#0e757c','#558055','#D4A373','#996A5C','#334155','#64748b','#94a3b8','#cbd5e1'];
+        
+        const defaultData = { 
+            txs: [], 
+            cats: { 
+                exp:['Esenciales','Deudas','Fitness','Viaje Italia','Inversiones','Proyectos'], 
+                inc:['Sueldo Famiq','Honorarios','Rentas','Otros'] 
+            }, 
+            concepts: {
+                'Esenciales': ['Alquiler','Expensas','Supermercado','Luz','Gas','Internet'],
+                'Deudas': ['Prestamo 11M','Visa','Mastercard'],
+                'Fitness': ['Cuota Gym','Proteína','Creatina','Ropa Deportiva'],
+                'Viaje Italia': ['Fondo Ahorro','Pasajes','Alojamiento'],
+                'Inversiones': ['Plan 500 USD','CEDEARs','Crypto'],
+                'Proyectos': ['ALEJEN Pediátrica','App Finance'],
+                'Sueldo Famiq': ['Mensual','Bono'],
+                'Honorarios': ['Consultas Dra','Particulares']
+            }, 
+            recurrentes: [], 
+            monthlyRates: {}, 
+            accounts: [
+                { id: 'acc_cash', name: 'Efectivo ARS', kind: 'asset', currency: 'ARS', initBal: 0 }
+            ], 
+            closedMonths: {} 
+        };
 
-    const fmt = (n) => n.toLocaleString('es-AR', {minimumFractionDigits: 0, maximumFractionDigits: 0});
-    const fmtUsd = (n) => (n/1000).toFixed(1) + 'K';
+        let appData = JSON.parse(JSON.stringify(defaultData));
+        let currentDate = new Date(); currentDate.setDate(1);
+        
+        let editId = null;
+        let editAccId = null;
+        let cExp = null;
+        let cInc = null;
+        let drillCat = null;
+        let cNWComp = null;
+        
+        let isSelectionMode = false;
+        let selectedTxIds = new Set();
+        let historyStack = [];
+        let netWorthChartInst = null;
+        
+        const fmt = (n) => n.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 
-    // *** AUTO-WAKE LISTENER ***
-    document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') {
-            forceSync();
+        window.onload = async () => {
+            loadLocal();
+            sanitizeData();
+            updateDateUI();
+            renderAdminTree();
+            await forceSync();
+            loadMonthData();
+            renderNetWorthView();
+        };
+
+        // =========================================================================
+        // GESTIÓN DE DATOS
+        // =========================================================================
+        function sanitizeData() {
+            if (!appData.cats) appData = JSON.parse(JSON.stringify(defaultData));
+            if (!appData.concepts) appData.concepts = defaultData.concepts;
         }
-    });
 
-    window.onload = () => { 
-        loadLocal(); 
-        updateDateUI(); 
-        forceSync(); 
-    };
+        function getFilteredTxs() {
+            const y = currentDate.getFullYear();
+            const m = currentDate.getMonth() + 1;
+            return appData.txs.filter(t => !t.deletedAt && parseInt(t.date.split('-')[0]) === y && parseInt(t.date.split('-')[1]) === m);
+        }
 
-    function updateDateUI() { 
-        document.getElementById('monthTxt').innerText = `${MONTHS[currentDate.getMonth()]} ${currentDate.getFullYear()}`; 
-        refreshAll(); 
-    }
-    function changeMonth(d) { currentDate.setMonth(currentDate.getMonth() + d); updateDateUI(); }
-    
-    function saveRates() {
-        const key = getKey();
-        if(!data.monthlyRates) data.monthlyRates={};
-        data.monthlyRates[key] = { ARS: parseFloat(document.getElementById('rateArs').value)||1200, COP: parseFloat(document.getElementById('rateCop').value)||3700 };
-        saveData();
-    }
-    function getKey() { return `${currentDate.getFullYear()}-${(currentDate.getMonth()+1).toString().padStart(2,'0')}`; }
-    function isMonthClosed() { return !!data.closedMonths[getKey()]; }
+        function getMonthKey(d = currentDate) {
+            return `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2,'0')}`;
+        }
 
-    function loadLocal() {
-        const stored = localStorage.getItem(STORAGE_KEY); 
-        if(stored) data = JSON.parse(stored);
-        
-        if(!data.accounts) data.accounts = [];
-        if(!data.txs) data.txs = [];
-        if(!data.closedMonths) data.closedMonths = {};
-        if(!data.accountCats || !data.accountCats.length) data.accountCats = ['Efectivo', 'Banco', 'Inversiones', 'Cripto', 'Tarjeta', 'Otro'];
-        if(!data.recurrentes) data.recurrentes = [];
-    }
+        function isMonthClosed(d = currentDate) {
+            return !!appData.closedMonths[getMonthKey(d)];
+        }
 
-    function refreshAll() {
-        const y = currentDate.getFullYear(), m = currentDate.getMonth() + 1;
-        const key = getKey();
-        let rates = (data.monthlyRates && data.monthlyRates[key]) ? data.monthlyRates[key] : { ARS: 1200, COP: 3700 };
-        document.getElementById('rateArs').value = rates.ARS; 
-        document.getElementById('rateCop').value = rates.COP;
+        function saveLocal() {
+            localStorage.setItem('financeFlowData_Javi', JSON.stringify(appData));
+        }
 
-        const closed = isMonthClosed();
-        document.getElementById('lockIcon').style.display = closed ? 'inline-block' : 'none';
-        document.getElementById('btnCloseMonth').innerText = closed ? 'Reabrir Mes' : 'Cerrar Mes';
-        document.getElementById('btnCloseMonth').style.background = closed ? '#FFFFFF' : '#1E293B';
-        document.getElementById('btnCloseMonth').style.color = closed ? '#0F172A' : '#FFFFFF';
-        document.getElementById('btnCloseMonth').style.border = closed ? '1px solid #CBD5E1' : 'none';
+        function loadLocal() {
+            const stored = localStorage.getItem('financeFlowData_Javi');
+            if(stored) appData = JSON.parse(stored);
+        }
 
-        currentTxs = (data.txs || []).filter(t => !t.deletedAt && parseInt(t.date.split('-')[0]) === y && parseInt(t.date.split('-')[1]) === m);
-        currentTxs.forEach(t => {
-            if(!t.exec && t.curr && t.curr!=='ARS') {
-                if(t.curr === 'USD') t.amount = t.origAmt * rates.ARS;
-                else if(t.curr === 'COP') t.amount = (t.origAmt / rates.COP) * rates.ARS; 
+        async function forceSync() {
+            document.getElementById('syncIcon').classList.add('animate-spin');
+            try {
+                const r = await fetch(API_URL);
+                const d = await r.json();
+                if(d) {
+                    appData = d;
+                    saveLocal();
+                    loadMonthData();
+                }
+            } catch(e) {
+                console.log("Offline or Sync Error");
             }
-        });
-        currentTxs.sort((a,b) => a.date.localeCompare(b.date) || a.id - b.id);
-        
-        renderDash(); 
-        
-        renderAlloc();
-        if(document.getElementById('view-stats').classList.contains('active')) renderStats();
-        if(document.getElementById('view-settings').classList.contains('active')) renderSettings();
-        if(document.getElementById('view-networth').classList.contains('active')) renderNetWorth();
-    }
+            document.getElementById('syncIcon').classList.remove('animate-spin');
+        }
 
-    function renderDash() {
-        const inc = currentTxs.filter(t=>t.type=='inc').reduce((a,b)=>a+b.amount,0);
-        const exp = currentTxs.filter(t=>t.type=='exp').reduce((a,b)=>a+b.amount,0);
-        const bal = inc - exp;
-        const rateArs = parseFloat(document.getElementById('rateArs').value)||1;
-        
-        const balEl = document.getElementById('kpiBal');
-        const color = bal >= 0 ? '#34D399' : '#F87171';
-        
-        balEl.innerText = `AR$ ${fmt(bal)}`;
-        balEl.style.color = color;
-        document.getElementById('kpiUsd').innerText = fmt(Math.round(bal/rateArs));
-        document.getElementById('kpiUsd').style.color = color;
-        
-        document.getElementById('sum-inc').innerText = `$${fmt(inc)}`;
-        document.getElementById('sum-exp').innerText = `$${fmt(exp)}`;
-
-        const lInc = document.getElementById('list-inc'), lExp = document.getElementById('list-exp');
-        lInc.innerHTML = ''; lExp.innerHTML = '';
-
-        let runningBal = 0;
-        const balMap = {};
-        currentTxs.forEach(t => {
-            if(t.type === 'inc') runningBal += t.amount;
-            else if(t.type === 'exp') runningBal -= t.amount;
-            balMap[t.id] = runningBal;
-        });
-
-        currentTxs.forEach(t => {
-            if(t.type === 'transfer') return;
-
-            const isInc = t.type === 'inc';
-            const el = document.createElement('div');
-            el.className = `tx-card ${t.exec ? 'executed' : ''}`;
-            el.onclick = () => edit(t.id);
-            
-            let extraInfo = (t.curr && t.curr!=='ARS') ? `<span style="color:var(--accent); font-weight:800; margin-left:4px;">${t.origAmt} ${t.curr}</span>` : '';
-            let sourceTag = '';
-            
-            if(!isInc && t.linkId) {
-                const parentInc = currentTxs.find(x => x.id == t.linkId);
-                if(parentInc) sourceTag = `<span class="source-tag"><i class="fas fa-link" style="font-size:8px;"></i> ${parentInc.desc}</span>`;
+        async function saveData() {
+            saveLocal();
+            try {
+                await fetch(API_URL, { method: 'POST', body: JSON.stringify(appData) });
+            } catch(e) {
+                console.log("Save Cloud Error");
             }
+            loadMonthData();
+            renderNetWorthView();
+        }
 
-            let qMagic = '';
-            if(!isInc) {
-                const currentGlobalBal = balMap[t.id];
-                qMagic = `<span class="magic-q ${currentGlobalBal>=0?'q-ok':'q-bad'}">Sub: $${fmt(currentGlobalBal)}</span>`;
-            }
+        function pushHistory() {
+            historyStack.push(JSON.stringify(appData));
+            document.getElementById('btnUndo').classList.remove('btn-disabled');
+        }
 
-            let splitBadge = (t.children && t.children.length) ? `<span class="cat-tag" style="background:#e0e7ff; color:#4338ca;">DIVIDIDO</span>` : '';
-            let accName = '';
-            if(t.fromAccountId) { const a = data.accounts.find(x=>x.id==t.fromAccountId); if(a) accName = a.name; }
-            else if(t.toAccountId) { const a = data.accounts.find(x=>x.id==t.toAccountId); if(a) accName = a.name; }
-            let accBadge = accName ? `<span class="acc-badge">${accName}</span>` : '';
+        function undo() {
+            if(!historyStack.length) return;
+            appData = JSON.parse(historyStack.pop());
+            saveData();
+        }
 
-            const catDisplay = isInc ? `<span class="cat-tag">${t.cat}</span>` : '';
-
-            el.innerHTML = `
-                <div class="tx-top">
-                    <div class="tx-desc">${t.desc || (t.children?'(Varios)':'')}</div>
-                    <div class="tx-amt" style="color:${isInc?'var(--inc)':'var(--txt)'}">$${fmt(t.amount)}</div>
-                </div>
-                <div class="tx-sub">
-                    <div style="display:flex; align-items:center;">
-                        ${sourceTag} ${accBadge}
-                        ${catDisplay} ${splitBadge} ${extraInfo}
-                    </div>
-                    <div style="display:flex; align-items:center; gap:8px;">
-                        ${qMagic}
-                        <span style="margin-left:5px;">${t.date.split('-')[2]}</span>
-                        <i class="fas fa-copy" style="color:#cbd5e1; font-size:10px;" onclick="event.stopPropagation(); cloneTx('${t.id}')"></i>
-                    </div>
-                </div>
-            `;
-            (isInc ? lInc : lExp).appendChild(el);
-        });
-        filterExp();
-    }
-
-    function renderNetWorth() {
-        const rates = { ARS: parseFloat(document.getElementById('rateArs').value)||1200, COP: parseFloat(document.getElementById('rateCop').value)||3700 };
-        const currentEnd = new Date(currentDate.getFullYear(), currentDate.getMonth()+1, 0).toISOString().split('T')[0];
-        const balances = computeBalancesAsOf(currentEnd, rates);
-        
-        const list = document.getElementById('list-accounts');
-        list.innerHTML = '';
-        
-        let totalAssets = 0, totalLiabs = 0;
-
-        data.accounts.forEach(a => {
-            if(a.dateCreated && a.dateCreated > currentEnd) return;
-
-            const bal = balances[a.id] || 0;
-            let balUSD = 0;
-            if(a.currency === 'USD') balUSD = bal;
-            else if(a.currency === 'ARS') balUSD = bal / rates.ARS;
-            else if(a.currency === 'COP') balUSD = (bal / rates.COP);
+        // =========================================================================
+        // LÓGICA DE RENDERIZADO PRINCIPAL
+        // =========================================================================
+        function loadMonthData() {
+            const y = currentDate.getFullYear();
+            const m = currentDate.getMonth() + 1;
+            const closed = isMonthClosed();
             
-            if(a.kind === 'asset') totalAssets += balUSD; else totalLiabs += balUSD;
-
-            const icon = a.kind === 'asset' ? 'fa-arrow-up' : 'fa-arrow-down';
-            const colorClass = a.kind === 'asset' ? 'nw-green' : 'nw-red';
+            updateReadOnlyUI(closed);
             
-            const el = document.createElement('div');
-            el.className = 'nw-card';
-            el.onclick = () => editAccount(a.id);
-            el.innerHTML = `
-                <div style="display:flex; align-items:center; flex:1;">
-                    <div class="nw-icon ${colorClass}"><i class="fas ${icon}"></i></div>
-                    <div class="nw-info">
-                        <div class="nw-name">${a.name}</div>
-                        <div class="nw-curr">${a.type.toUpperCase()} • ${a.currency}</div>
-                    </div>
-                </div>
-                <div class="nw-val">
-                    <div class="nw-amt">USD $${fmt(balUSD)}</div>
-                    ${a.currency!=='USD' ? `<div class="nw-native">${fmt(bal)} ${a.currency}</div>` : ''}
-                </div>
-            `;
-            list.appendChild(el);
-        });
+            let rates = appData.monthlyRates[getMonthKey()] || { ARS: 1500, COP: 3700, USD: 1 };
+            document.getElementById('rate_ARS').value = rates.ARS;
+            document.getElementById('rate_COP').value = rates.COP;
+            
+            const txs = getFilteredTxs();
+            
+            txs.forEach(t => {
+                if(!t.exec && t.origCurr && t.origCurr !== 'ARS') {
+                    if(t.origCurr === 'USD') t.amount = t.origAmt * rates.ARS;
+                    else if(t.origCurr === 'COP') t.amount = (t.origAmt / rates.COP) * rates.ARS;
+                }
+            });
 
-        document.getElementById('nw-assets').innerText = `USD $${fmt(totalAssets)}`;
-        document.getElementById('nw-liabs').innerText = `USD $${fmt(totalLiabs)}`;
-
-        renderNetWorthChart(rates);
-    }
-
-    function computeBalancesAsOf(isoEnd, rates) {
-        const bal = {};
-        data.accounts.forEach(a => { 
-            if(a.dateCreated && a.dateCreated > isoEnd) {
-                bal[a.id] = 0;
+            txs.sort((a,b) => a.date.localeCompare(b.date) || a.id - b.id);
+            
+            updateKPIs(txs);
+            renderLists(txs);
+            renderCharts(txs);
+            renderAdminTree();
+            renderRecurrentesAdmin();
+            
+            const dashTxs = txs.filter(t => t.type !== 'transfer');
+            const i = dashTxs.filter(t => t.type == 'inc').reduce((a,b) => a + b.amount, 0);
+            const e = dashTxs.filter(t => t.type == 'exp').reduce((a,b) => a + b.amount, 0);
+            
+            document.getElementById('monthCloseBalance').innerText = `$${fmt(i - e)}`;
+            const b = document.getElementById('monthStatusBadge');
+            const ac = document.getElementById('monthActionContainer');
+            
+            if(closed) {
+                b.innerText = "CERRADO";
+                b.className = "inline-flex mt-0.5 text-[10px] font-black px-2 py-0.5 rounded-md bg-red-100 text-red-600 border border-red-200 tracking-wide";
+                ac.innerHTML = `<button onclick="reopenMonth()" class="w-full py-2 bg-white border border-slate-300 text-slate-600 text-[10px] font-bold rounded-lg shadow-sm hover:bg-slate-50 hover:text-slate-800 transition-all flex justify-center items-center gap-2"><span class="material-symbols-outlined text-sm">lock_open</span> REABRIR MES</button>`;
             } else {
-                bal[a.id] = parseFloat(a.initBal)||0; 
+                b.innerText = "ABIERTO";
+                b.className = "inline-flex mt-0.5 text-[10px] font-black px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-600 border border-emerald-200 tracking-wide";
+                ac.innerHTML = `<button onclick="closeMonth()" class="w-full py-2 bg-slate-900 text-white text-[10px] font-bold rounded-lg shadow hover:bg-slate-800 transition-all flex justify-center items-center gap-2"><span class="material-symbols-outlined text-sm">lock</span> CERRAR MES</button>`;
             }
-        });
-        
-        data.txs.filter(t => !t.deletedAt && t.date <= isoEnd).forEach(t => {
-            const getAmtForAcc = (accId) => {
-                const acc = data.accounts.find(a=>a.id===accId);
-                if(!acc) return 0;
-                if(acc.dateCreated && acc.dateCreated > t.date) return 0;
+        }
 
-                let txValInARS = t.amount; 
-                if(t.curr === 'USD') txValInARS = t.origAmt * rates.ARS;
-                else if(t.curr === 'COP') txValInARS = (t.origAmt / rates.COP) * rates.ARS;
-
-                if(acc.currency === 'ARS') return txValInARS;
-                if(acc.currency === 'USD') return txValInARS / rates.ARS;
-                if(acc.currency === 'COP') return (txValInARS / rates.ARS) * rates.COP;
-                return 0;
-            };
-
-            if(t.type === 'inc' && t.toAccountId) bal[t.toAccountId] += getAmtForAcc(t.toAccountId);
-            if(t.type === 'exp' && t.fromAccountId) bal[t.fromAccountId] -= getAmtForAcc(t.fromAccountId);
-            if(t.type === 'transfer' && t.fromAccountId && t.toAccountId) {
-                bal[t.fromAccountId] -= getAmtForAcc(t.fromAccountId);
-                bal[t.toAccountId] += getAmtForAcc(t.toAccountId); 
-            }
-        });
-        return bal;
-    }
-
-    function renderNetWorthChart(rates) {
-        const cvs = document.getElementById('chartNetWorth');
-        const chartInstance = Chart.getChart(cvs);
-        if(chartInstance) chartInstance.destroy();
-        
-        const labels = [];
-        const types = data.accountCats || ['Efectivo', 'Banco', 'Inversiones', 'Cripto', 'Tarjeta', 'Otro'];
-        const datasetsMap = {};
-        
-        types.forEach(t => datasetsMap[t] = []);
-        datasetsMap['Pasivos'] = []; 
-
-        let d = new Date(currentDate); 
-        d.setDate(1); 
-        d.setMonth(d.getMonth()-5); 
-        
-        for(let i=0; i<6; i++) {
-            const end = new Date(d.getFullYear(), d.getMonth()+1, 0).toISOString().split('T')[0];
-            const bals = computeBalancesAsOf(end, rates);
+        function renderLists(txs) {
+            const lI = document.getElementById('list-inc');
+            const lE = document.getElementById('list-exp');
+            const lA = document.getElementById('list-alloc');
             
-            const sums = {}; types.forEach(t => sums[t]=0); sums['Pasivos']=0;
+            lI.innerHTML = ''; 
+            lE.innerHTML = ''; 
+            lA.innerHTML = '';
+            
+            const search = document.getElementById('searchExpInput').value.toLowerCase();
+            const dashTxs = txs.filter(t => t.type !== 'transfer');
 
-            data.accounts.forEach(a => {
-                if(a.dateCreated && a.dateCreated > end) return;
+            dashTxs.forEach(t => {
+                if(t.type === 'exp') {
+                    const matchSelf = t.desc.toLowerCase().includes(search);
+                    const matchChild = (t.children || []).some(c => c.desc.toLowerCase().includes(search));
+                    if(search && !matchSelf && !matchChild) return;
+                }
 
-                let v = bals[a.id];
-                let vUSD = 0;
-                if(a.currency === 'USD') vUSD = v;
-                else if(a.currency === 'ARS') vUSD = v / rates.ARS;
-                else if(a.currency === 'COP') vUSD = v / rates.COP; 
-
-                if(a.kind === 'liability') {
-                    sums['Pasivos'] -= vUSD; 
+                const isSplit = t.children && t.children.length > 0;
+                const isSelected = selectedTxIds.has(Number(t.id));
+                
+                const el = document.createElement(isSplit ? 'details' : 'div');
+                let rowClass = "compact-row group flex flex-col cursor-pointer ";
+                if(isSelectionMode) {
+                    rowClass += isSelected ? "selected" : "bg-white hover:bg-slate-50 opacity-60";
                 } else {
-                    const t = a.type || 'Otro';
-                    sums[t] = (sums[t]||0) + vUSD;
+                    rowClass += t.exec ? "opacity-50 bg-slate-50 line-through decoration-slate-300" : "bg-white";
+                }
+                el.className = rowClass;
+
+                const clickAction = isSelectionMode ? `toggleSelectTx(${t.id}, event)` : (isSplit ? '' : `editTx(${t.id})`);
+                
+                let iconHtml = '';
+                if(isSelectionMode) {
+                    iconHtml = `<div class="custom-chk ${isSelected ? 'checked' : ''}"><i class="material-symbols-outlined">check</i></div>`;
+                } else {
+                    iconHtml = `<div onclick="toggleExec(${t.id}, event)" class="custom-chk ${t.exec ? 'exec' : ''}"><i class="material-symbols-outlined">check</i></div>`;
+                }
+
+                const content = `
+                    <div class="flex items-center gap-2 w-full" onclick="${clickAction}">
+                        <div class="shrink-0 flex items-center justify-center w-5">${iconHtml}</div>
+                        <div class="min-w-0 flex-1">
+                            <div class="flex items-center justify-between leading-none">
+                                <p class="text-[11px] font-bold text-slate-800 truncate">${t.desc}</p>
+                                <p class="text-[11px] font-bold ${t.type === 'inc' ? 'text-success' : 'text-danger'}">$${fmt(t.amount)}</p>
+                            </div>
+                            <div class="flex items-center gap-1.5 mt-0.5">
+                                <span class="text-[9px] text-slate-400 font-medium">${t.date.split('-')[2]}</span>
+                                <span class="text-[8px] px-1 bg-slate-100 rounded text-slate-500 tracking-wide">${isSplit ? 'SPLIT' : (t.cat || 'Gral')}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                if(isSplit) {
+                    el.innerHTML = `<summary class="list-none outline-none select-none">${content}</summary>`;
+                    let childHtml = `<div class="mt-1 space-y-0.5 pl-7 border-l ml-2.5 border-slate-200">`;
+                    t.children.forEach(c => {
+                        childHtml += `<div class="flex justify-between text-[9px] text-slate-500 py-0.5"><span>${c.desc}</span><span class="font-medium">$${fmt(c.amount)}</span></div>`;
+                    });
+                    childHtml += `<button onclick="editTx(${t.id})" class="text-[8px] text-primary underline mt-0.5">Editar Split</button></div>`;
+                    el.innerHTML += childHtml;
+                } else {
+                    el.innerHTML = content;
+                }
+                
+                (t.type === 'inc' ? lI : lE).appendChild(el);
+            });
+
+            document.getElementById('c-inc').innerText = dashTxs.filter(t => t.type === 'inc').length;
+            document.getElementById('c-exp').innerText = dashTxs.filter(t => t.type === 'exp').length;
+
+            // ASIGNACIÓN - Lógica mejorada para incluir Splits
+            dashTxs.filter(t => t.type == 'inc').forEach(inc => {
+                // Buscar Gastos directos O partes de Split vinculadas a este ingreso
+                const directSubs = dashTxs.filter(t => t.type == 'exp' && t.linkId == inc.id);
+                let splitSubs = [];
+                
+                dashTxs.filter(t => t.type == 'exp' && t.children && t.children.length > 0).forEach(parent => {
+                    parent.children.filter(c => c.linkId == inc.id).forEach(c => {
+                        splitSubs.push({ ...c, parentId: parent.id, exec: parent.exec }); // Hereda ejecución del padre visualmente
+                    });
+                });
+
+                const allSubs = [...directSubs, ...splitSubs];
+                const spent = allSubs.reduce((a,b) => a + b.amount, 0);
+                const rem = inc.amount - spent;
+                const pct = Math.min(100, (spent/inc.amount) * 100);
+                
+                let rows = '';
+                if(allSubs.length > 0) {
+                    allSubs.forEach(s => {
+                        // Si es split, editamos al padre
+                        const editFn = s.parentId ? `editTx(${s.parentId})` : `editTx(${s.id})`;
+                        const isSplitPart = !!s.parentId;
+                        rows += `<div class="flex justify-between py-1 text-[9px] border-b border-dashed border-slate-100 cursor-pointer hover:bg-slate-50 px-1.5 rounded ${s.exec ? 'line-through text-slate-400' : 'text-slate-600'}" onclick="${editFn}"><span class="truncate pr-2">${isSplitPart ? '(Split) ' : ''}${s.desc}</span><span class="font-bold shrink-0">$${fmt(s.amount)}</span></div>`;
+                    });
+                } else {
+                    rows = '<span class="text-[9px] text-slate-300 italic px-1.5">Sin asignaciones</span>';
+                }
+                
+                const card = document.createElement('div');
+                card.innerHTML = `<div class="rounded-lg border border-slate-200 bg-white mb-1 shadow-sm overflow-hidden group"><div class="px-2 py-1.5 bg-slate-50/50 flex justify-between items-center cursor-pointer hover:bg-slate-100 transition-colors"><div onclick="this.closest('.rounded-lg').querySelector('.alloc-details').classList.toggle('hidden')" class="flex-1"><p class="text-[10px] font-bold text-slate-700 leading-tight">${inc.desc}</p><p class="text-[9px] font-extrabold ${rem >= 0 ? 'text-success' : 'text-danger'}">$${fmt(rem)}</p></div><div class="flex items-center gap-2"><span class="text-[8px] font-bold text-slate-500">${Math.round(pct)}%</span><button onclick="unassignGroup(${inc.id})" class="text-slate-300 hover:text-red-500"><span class="material-symbols-outlined text-[10px]">link_off</span></button></div></div><div class="w-full h-0.5 bg-slate-100"><div class="h-full ${pct > 90 ? 'bg-danger' : 'bg-primary'}" style="width: ${pct}%;"></div></div><div class="alloc-details hidden bg-white py-0.5 border-t border-slate-100">${rows}</div></div>`;
+                lA.appendChild(card);
+            });
+        }
+
+        function updateKPIs(txs) {
+            const dashTxs = txs.filter(t => t.type !== 'transfer');
+            const i = dashTxs.filter(t => t.type == 'inc').reduce((a,b) => a + b.amount, 0);
+            const e = dashTxs.filter(t => t.type == 'exp').reduce((a,b) => a + b.amount, 0);
+            const rate = parseFloat(document.getElementById('rate_ARS').value) || 1200;
+            
+            document.getElementById('k-inc').innerText = '$' + fmt(i);
+            document.getElementById('k-exp').innerText = '$' + fmt(e);
+            document.getElementById('k-bal').innerText = '$' + fmt(i - e);
+            document.getElementById('k-usd').innerText = 'USD ' + fmt((i - e) / rate);
+        }
+
+        function updateReadOnlyUI(closed) {
+            document.getElementById('lockIcon').classList.toggle('hidden', !closed);
+            const els = ['newBtnContainer', 'fabNew', 'allocControls', 'btnSelectMode'];
+            els.forEach(id => {
+                const el = document.getElementById(id);
+                if(closed) {
+                    el.classList.add('opacity-50', 'pointer-events-none');
+                    if(id == 'fabNew') el.classList.add('hidden');
+                } else {
+                    el.classList.remove('opacity-50', 'pointer-events-none');
+                    if(id == 'fabNew') el.classList.remove('hidden');
+                }
+            });
+            if(closed && isSelectionMode) toggleSelectionMode();
+        }
+
+        function toggleSelectionMode() {
+            if(isMonthClosed()) return alert("Mes cerrado.");
+            isSelectionMode = !isSelectionMode;
+            if(!isSelectionMode) selectedTxIds.clear();
+            const btn = document.getElementById('btnSelectMode');
+            btn.classList.toggle('text-primary', isSelectionMode);
+            btn.classList.toggle('bg-primary/10', isSelectionMode);
+            updateSelectionUI();
+            loadMonthData(); 
+        }
+
+        function toggleSelectTx(id, e) {
+            if(e) e.stopPropagation();
+            const nId = Number(id);
+            if(selectedTxIds.has(nId)) selectedTxIds.delete(nId);
+            else selectedTxIds.add(nId);
+            updateSelectionUI();
+            loadMonthData();
+        }
+
+        function updateSelectionUI() {
+            const b = document.getElementById('bulkBar');
+            if(selectedTxIds.size > 0) {
+                b.classList.add('show');
+                document.getElementById('bulkCount').innerText = selectedTxIds.size;
+            } else {
+                b.classList.remove('show');
+                if(!isSelectionMode) b.classList.add('hidden');
+                else b.classList.remove('hidden');
+            }
+        }
+
+        function selectAllVisible() {
+            getFilteredTxs().filter(t => t.type === 'exp').forEach(t => selectedTxIds.add(Number(t.id)));
+            updateSelectionUI();
+            loadMonthData();
+        }
+
+        function openBulkModal() {
+            const cs = document.getElementById('bulkCatSelect');
+            cs.innerHTML = '<option value="">-- No cambiar --</option>';
+            (appData.cats.exp || []).forEach(c => {
+                cs.innerHTML += `<option value="${c}">${c}</option>`;
+            });
+
+            const ls = document.getElementById('bulkLinkSelect');
+            ls.innerHTML = '<option value="">-- No cambiar --</option><option value="unassign">Desvincular</option>';
+            const k = getMonthKey();
+            appData.txs.filter(t => !t.deletedAt && t.type === 'inc' && t.date.startsWith(k)).forEach(i => {
+                ls.innerHTML += `<option value="${i.id}">${i.desc}</option>`;
+            });
+
+            document.getElementById('bulkModal').classList.remove('hidden');
+        }
+
+        function closeBulkModal() {
+             document.getElementById('bulkModal').classList.add('hidden');
+        }
+
+        function bulkApplyChanges() {
+            pushHistory();
+            const nc = document.getElementById('bulkCatSelect').value;
+            const nl = document.getElementById('bulkLinkSelect').value;
+            appData.txs.forEach(t => {
+                if(selectedTxIds.has(Number(t.id))) {
+                    if(nc) t.cat = nc;
+                    if(nl === 'unassign') t.linkId = null;
+                    else if(nl) t.linkId = nl;
+                }
+            });
+            saveData();
+            toggleSelectionMode();
+            closeBulkModal();
+        }
+
+        function bulkSetExec(v) {
+            pushHistory();
+            appData.txs.forEach(t => {
+                if(selectedTxIds.has(Number(t.id))) t.exec = v;
+            });
+            saveData();
+            toggleSelectionMode();
+            closeBulkModal();
+        }
+
+        function bulkDelete() {
+            if(!confirm('¿Borrar elementos seleccionados?')) return;
+            pushHistory();
+            appData.txs.forEach(t => {
+                if(selectedTxIds.has(Number(t.id))) t.deletedAt = Date.now();
+            });
+            saveData();
+            toggleSelectionMode();
+            closeBulkModal();
+        }
+
+        // =========================================================================
+        // FORMULARIOS, MODALES Y SPLIT
+        // =========================================================================
+        
+        // --- FIX 1: FECHA INTELIGENTE AL ABRIR ---
+        function openModal() {
+            if(isMonthClosed()) return alert("Mes cerrado.");
+            editId = null;
+            document.getElementById('txForm').reset();
+            document.getElementById('mTitle').innerText = 'Nuevo';
+            document.getElementById('btnDel').classList.add('hidden');
+            
+            // Lógica: Si estoy viendo el mes actual, poner Hoy. Si estoy viendo otro mes, poner el 1ro de ese mes.
+            const now = new Date();
+            const viewingMonth = currentDate.getMonth();
+            const viewingYear = currentDate.getFullYear();
+            
+            let dToSet;
+            if(now.getMonth() === viewingMonth && now.getFullYear() === viewingYear) {
+                dToSet = now; // Es hoy
+            } else {
+                dToSet = new Date(viewingYear, viewingMonth, 1); // 1ro del mes visualizado
+            }
+            
+            // Ajuste de zona horaria para que el input date no reste un día
+            const offset = dToSet.getTimezoneOffset() * 60000;
+            const localISOTime = (new Date(dToSet.getTime() - offset)).toISOString().split('T')[0];
+            
+            document.getElementById('fDate').value = localISOTime;
+            
+            document.getElementById('splitRows').innerHTML = '';
+            setType('exp');
+            document.getElementById('modalOverlay').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('modalOverlay').classList.add('hidden');
+        }
+
+        function setType(t) {
+            document.getElementById('fType').value = t;
+            ['btnExp','btnInc','btnTrf'].forEach(b => {
+                document.getElementById(b).className = "py-1.5 rounded-md text-[10px] font-bold transition-all text-slate-400 hover:text-slate-600";
+            });
+            const activeBtn = t === 'exp' ? 'btnExp' : (t === 'inc' ? 'btnInc' : 'btnTrf');
+            const activeColor = t === 'exp' ? 'text-danger' : (t === 'inc' ? 'text-success' : 'text-primary');
+            document.getElementById(activeBtn).className = `py-1.5 rounded-md text-[10px] font-bold transition-all shadow-sm bg-white ${activeColor} border border-slate-100`;
+
+            const els = {from:'divFromAcc', to:'divToAcc', cat:'divCat', split:'divSplitToggle', link:'linkRow'};
+            for(let k in els) document.getElementById(els[k]).classList.add('hidden');
+            document.getElementById('normalTxFields').classList.remove('hidden');
+
+            if(t === 'exp') {
+                ['from','cat','split','link'].forEach(k => document.getElementById(els[k]).classList.remove('hidden'));
+                renderChips('exp');
+                renderLinkChips();
+            } else if(t === 'inc') {
+                ['to','cat'].forEach(k => document.getElementById(els[k]).classList.remove('hidden'));
+                renderChips('inc');
+            } else {
+                ['from','to'].forEach(k => document.getElementById(els[k]).classList.remove('hidden'));
+            }
+            
+            document.getElementById('fIsSplit').checked = false;
+            toggleSplitUI();
+            updateAccountSelects();
+        }
+
+        function toggleSplitUI() {
+            const s = document.getElementById('fIsSplit').checked;
+            document.getElementById('splitContainer').classList.toggle('hidden', !s);
+            document.getElementById('normalTxFields').classList.toggle('hidden', s);
+            document.getElementById('linkRow').classList.toggle('hidden', s); // Ocultar link global si es split
+            if(s && document.getElementById('splitRows').innerHTML === '') addSplitRow();
+        }
+
+        // --- Helper para opciones de ingresos ---
+        function getIncomeOptionsHtml(selectedId) {
+            let html = '<option value="">Sin vincular</option>';
+            const k = getMonthKey(); // Solo ingresos del mes actual
+            const incomes = appData.txs.filter(t => !t.deletedAt && t.type === 'inc' && t.date.startsWith(k));
+            incomes.forEach(inc => {
+                html += `<option value="${inc.id}" ${inc.id == selectedId ? 'selected' : ''}>${inc.desc}</option>`;
+            });
+            return html;
+        }
+
+        // --- FIX 2: SPLIT ROW CON FECHA Y LINK ---
+        function addSplitRow(data = {}) {
+            const c = document.getElementById('splitRows');
+            const d = document.createElement('div');
+            const rid = `split_${Date.now()}_${Math.random()}`;
+            d.className = 'split-input-row';
+            
+            let catOptions = '';
+            (appData.cats.exp || []).forEach(x => {
+                catOptions += `<option value="${x}" ${data.cat === x ? 'selected' : ''}>${x}</option>`;
+            });
+
+            const initialCat = data.cat || (appData.cats.exp || [])[0];
+            const concepts = appData.concepts[initialCat] || [];
+            let datalistOptions = '';
+            concepts.forEach(x => datalistOptions += `<option value="${x}">`);
+
+            // Fecha por defecto para el split: la del formulario principal o data existente
+            const defaultDate = document.getElementById('fDate').value;
+
+            d.innerHTML = `
+                <div class="grid grid-cols-12 gap-1 items-center">
+                    <div class="col-span-4">
+                        <select class="w-full text-[9px] border border-slate-200 rounded p-1 bg-white split-cat" onchange="updateSplitConcepts(this, '${rid}')">
+                            ${catOptions}
+                        </select>
+                    </div>
+                    <div class="col-span-4">
+                        <input type="date" class="w-full text-[9px] border border-slate-200 rounded p-1 split-date" value="${data.date || defaultDate}">
+                    </div>
+                    <div class="col-span-3">
+                        <input type="number" class="w-full text-[9px] border border-slate-200 rounded p-1 text-right font-bold split-amt" placeholder="0" value="${data.amount || ''}" step="0.01" oninput="calcSplitDiff()">
+                    </div>
+                    <div class="col-span-1 flex justify-end">
+                        <button type="button" onclick="this.closest('.split-input-row').remove();calcSplitDiff()" class="text-red-400 font-bold px-1 hover:text-red-600 text-lg">×</button>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-1 mt-1">
+                    <div class="relative">
+                        <input type="text" list="list_${rid}" class="w-full text-[9px] border border-slate-200 rounded p-1 split-desc" placeholder="Concepto" value="${data.desc || ''}">
+                        <datalist id="list_${rid}">${datalistOptions}</datalist>
+                    </div>
+                    <div>
+                        <select class="w-full text-[9px] border border-slate-200 rounded p-1 bg-slate-50 split-link text-slate-600">
+                            ${getIncomeOptionsHtml(data.linkId)}
+                        </select>
+                    </div>
+                </div>
+            `;
+            c.appendChild(d);
+            calcSplitDiff();
+        }
+
+        function updateSplitConcepts(el, rid) {
+            const nc = el.value;
+            const dl = document.getElementById(`list_${rid}`);
+            const cs = appData.concepts[nc] || [];
+            dl.innerHTML = '';
+            cs.forEach(c => dl.innerHTML += `<option value="${c}">`);
+        }
+
+        function calcSplitDiff() {
+            const total = parseFloat(document.getElementById('fAmt').value) || 0;
+            let sum = 0;
+            document.querySelectorAll('.split-amt').forEach(i => sum += parseFloat(i.value) || 0);
+            const d = total - sum;
+            const el = document.getElementById('splitDiffVal');
+            el.innerText = `$${fmt(d)}`;
+            el.className = `text-[9px] font-bold ${Math.abs(d) > 1 ? 'text-danger' : 'text-success'}`;
+            return d;
+        }
+        
+        document.getElementById('txForm').onsubmit = e => {
+            e.preventDefault();
+            if(isMonthClosed(new Date(document.getElementById('fDate').value))) return alert("Mes cerrado");
+            
+            const type = document.getElementById('fType').value;
+            const isSplit = document.getElementById('fIsSplit').checked && type === 'exp';
+            let children = [];
+
+            if(isSplit) {
+                if(Math.abs(calcSplitDiff()) > 1) return alert('La suma del split no coincide con el total.');
+                document.querySelectorAll('.split-input-row').forEach(r => {
+                    const a = parseFloat(r.querySelector('.split-amt').value) || 0;
+                    if(a > 0) {
+                        const c = r.querySelector('.split-cat').value;
+                        const d = r.querySelector('.split-desc').value;
+                        const date = r.querySelector('.split-date').value;  // Capturar Fecha
+                        const linkId = r.querySelector('.split-link').value || null; // Capturar Link
+                        
+                        children.push({id: Date.now() + Math.random(), cat: c, desc: d, amount: a, date: date, linkId: linkId});
+                        
+                        if(d) {
+                            if(!appData.concepts[c]) appData.concepts[c] = [];
+                            if(!appData.concepts[c].includes(d)) appData.concepts[c].push(d);
+                        }
+                    }
+                });
+            } else if(type !== 'transfer') {
+                const c = document.getElementById('fCat').value;
+                const d = document.getElementById('fDesc').value;
+                if(d) {
+                    if(!appData.concepts[c]) appData.concepts[c] = [];
+                    if(!appData.concepts[c].includes(d)) appData.concepts[c].push(d);
+                }
+            }
+            
+            pushHistory();
+            const tx = {
+                id: editId || Date.now(),
+                date: document.getElementById('fDate').value,
+                amount: calcConversion(),
+                origAmt: parseFloat(document.getElementById('fAmt').value),
+                origCurr: document.getElementById('fCurr').value,
+                type,
+                cat: isSplit ? 'Múltiples' : document.getElementById('fCat').value,
+                desc: document.getElementById('fDesc').value || (isSplit ? 'Split' : ''),
+                exec: document.getElementById('fExec').checked,
+                linkId: document.getElementById('fLink').value || null,
+                deletedAt: null,
+                fromAccountId: document.getElementById('fFromAcc').value,
+                toAccountId: document.getElementById('fToAcc').value,
+                children: children
+            };
+            
+            if(editId) {
+                const i = appData.txs.findIndex(x => x.id == editId);
+                appData.txs[i] = tx;
+            } else {
+                appData.txs.push(tx);
+            }
+            saveData();
+            closeModal();
+        };
+
+        // =========================================================================
+        // PATRIMONIO NETO
+        // =========================================================================
+        function renderNetWorthView() {
+            const list = document.getElementById('list-accounts');
+            list.innerHTML = '';
+            
+            const rateARS = parseFloat(document.getElementById('rate_ARS').value) || 1500;
+            const rateCOP = parseFloat(document.getElementById('rate_COP').value) || 3700;
+            const rates = { ARS: rateARS, COP: rateCOP, USD: 1 };
+            
+            const balances = {};
+            appData.accounts.forEach(a => balances[a.id] = a.initBal || 0);
+            
+            const sortedTxs = appData.txs.filter(t => !t.deletedAt).sort((a,b) => a.date.localeCompare(b.date));
+            sortedTxs.forEach(t => {
+                const getTxValueInAccountCurrency = (accCurrency, tx) => {
+                    const txAmt = t.origAmt || t.amount;
+                    const txCurr = t.origCurr || 'ARS';
+                    if (accCurrency === txCurr) return txAmt;
+                    if (accCurrency === 'USD') return txCurr === 'ARS' ? txAmt / rates.ARS : (txAmt / rates.COP) / rates.ARS; 
+                    else if (accCurrency === 'COP') return txCurr === 'ARS' ? (txAmt / rates.ARS) * rates.COP : (txAmt * rates.COP);
+                    else return txCurr === 'USD' ? txAmt * rates.ARS : (txAmt / rates.COP) * rates.ARS;
+                };
+
+                if(t.type === 'inc' && t.toAccountId) {
+                    balances[t.toAccountId] += getTxValueInAccountCurrency(appData.accounts.find(a=>a.id===t.toAccountId).currency, t);
+                } else if(t.type === 'exp' && t.fromAccountId) {
+                    balances[t.fromAccountId] -= getTxValueInAccountCurrency(appData.accounts.find(a=>a.id===t.fromAccountId).currency, t);
+                } else if(t.type === 'transfer' && t.fromAccountId && t.toAccountId) {
+                    balances[t.fromAccountId] -= getTxValueInAccountCurrency(appData.accounts.find(a=>a.id===t.fromAccountId).currency, t);
+                    balances[t.toAccountId] += getTxValueInAccountCurrency(appData.accounts.find(a=>a.id===t.toAccountId).currency, t);
                 }
             });
 
-            labels.push(MONTHS[d.getMonth()]);
-            types.forEach(t => datasetsMap[t].push(sums[t]));
-            datasetsMap['Pasivos'].push(sums['Pasivos']);
+            let totalAssets = 0;
+            let totalLiabilities = 0;
 
-            d.setMonth(d.getMonth()+1);
+            appData.accounts.forEach(a => {
+                const bal = balances[a.id] || 0;
+                const balInARS = a.currency === 'ARS' ? bal : (a.currency === 'USD' ? bal * rates.ARS : (bal / rates.COP) * rates.ARS);
+                if(a.kind === 'asset') totalAssets += balInARS;
+                else totalLiabilities += balInARS;
+
+                list.innerHTML += `
+                    <div class="flex items-center justify-between p-2 border-b border-slate-100 last:border-0 hover:bg-slate-50 group cursor-pointer" onclick="editAccount('${a.id}')">
+                        <div class="flex items-center gap-2">
+                            <div class="size-6 rounded-full flex items-center justify-center ${a.kind === 'asset' ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}">
+                                <span class="material-symbols-outlined text-sm">${a.kind === 'asset' ? 'account_balance' : 'credit_card'}</span>
+                            </div>
+                            <div>
+                                <p class="text-[10px] font-bold text-slate-700">${a.name}</p>
+                                <p class="text-[9px] text-slate-400">${a.currency}</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-[10px] font-bold ${bal >= 0 ? 'text-slate-700' : 'text-red-500'}">${a.currency} ${fmt(bal)}</p>
+                            ${a.currency !== 'ARS' ? `<p class="text-[8px] text-slate-400">≈ $${fmt(balInARS)}</p>` : ''}
+                        </div>
+                    </div>`;
+            });
+
+            const netWorth = totalAssets + totalLiabilities;
+            document.getElementById('nw-total').innerText = `$${fmt(netWorth)}`;
+            document.getElementById('nw-usd').innerText = `USD ${fmt(netWorth / rates.ARS)}`;
+            document.getElementById('nw-assets').innerText = `$${fmt(totalAssets)}`;
+            document.getElementById('nw-liabs').innerText = `$${fmt(totalLiabilities)}`;
+            
+            renderNetWorthChart();
+            renderComposition(balances, rates);
         }
 
-        const datasets = types.map((t, i) => ({
-            label: t,
-            data: datasetsMap[t],
-            backgroundColor: PALETTE[i % PALETTE.length],
-            stack: 'Stack 0'
-        }));
-        
-        datasets.push({
-            label: 'Pasivos',
-            data: datasetsMap['Pasivos'],
-            backgroundColor: '#EF4444',
-            stack: 'Stack 0'
-        });
+        function renderNetWorthChart() {
+            const ctx = document.getElementById('chartNetWorth');
+            if(netWorthChartInst) netWorthChartInst.destroy();
+            const labels = [];
+            const dataAssets = [];
+            const dataLiabilities = [];
+            let d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - 11);
 
-        new Chart(cvs, {
-            type: 'bar',
-            data: { labels: labels, datasets: datasets },
-            options: { 
-                responsive: true, maintainAspectRatio: false, 
-                interaction: { mode: 'index', intersect: false },
-                plugins: { legend: { display: false } },
-                scales: { 
-                    x: { grid: { display:false }, stacked: true }, 
-                    y: { 
-                        stacked: true, 
-                        ticks: { 
-                            callback: v => {
-                                if(Math.abs(v) < 1000) return '$' + Math.round(v);
-                                return '$' + (v/1000).toFixed(1) + 'k';
-                            } 
-                        } 
-                    } 
+            for(let i=0; i<12; i++) {
+                labels.push(MONTHS[d.getMonth()]);
+                if (i === 11) {
+                     dataAssets.push(parseFloat(document.getElementById('nw-assets').innerText.replace(/\$|\./g,'')));
+                     dataLiabilities.push(parseFloat(document.getElementById('nw-liabs').innerText.replace(/\$|\./g,'')));
+                } else {
+                     dataAssets.push(0); dataLiabilities.push(0);
                 }
+                d.setMonth(d.getMonth() + 1);
             }
-        });
-    }
 
-    // --- ACCOUNT MANAGEMENT ---
-    function openAccountSheet() { 
-        if(isMonthClosed()) return alert("Mes Cerrado");
-        editAccId=null; document.getElementById('accForm').reset(); document.getElementById('btnDelAcc').style.display='none'; 
-        
-        if(!data.accountCats || data.accountCats.length === 0) {
-            data.accountCats = ['Efectivo', 'Banco', 'Inversiones', 'Cripto', 'Tarjeta', 'Otro'];
-        }
-
-        const sel = document.getElementById('accType'); sel.innerHTML='';
-        data.accountCats.forEach(c => { sel.innerHTML += `<option value="${c}">${c}</option>`; });
-        
-        document.getElementById('accDate').value = new Date().toISOString().split('T')[0];
-        document.getElementById('sheetAcc').classList.add('open'); 
-    }
-    function closeAccSheet() { document.getElementById('sheetAcc').classList.remove('open'); }
-    
-    function saveAccount(e) {
-        e.preventDefault();
-        const acc = {
-            id: editAccId || 'acc_'+Date.now(),
-            name: document.getElementById('accName').value,
-            type: document.getElementById('accType').value,
-            kind: document.getElementById('accKind').value,
-            currency: document.getElementById('accCurr').value,
-            initBal: parseFloat(document.getElementById('accInit').value)||0,
-            dateCreated: document.getElementById('accDate').value 
-        };
-        if(editAccId) { const i=data.accounts.findIndex(x=>x.id==editAccId); data.accounts[i]=acc; }
-        else data.accounts.push(acc);
-        saveData(); closeAccSheet(); refreshAll();
-    }
-    function editAccount(id) {
-        if(isMonthClosed()) return alert("Mes Cerrado");
-        const a = data.accounts.find(x=>x.id===id); if(!a) return;
-        editAccId = id;
-        
-        if(!data.accountCats || data.accountCats.length === 0) {
-            data.accountCats = ['Efectivo', 'Banco', 'Inversiones', 'Cripto', 'Tarjeta', 'Otro'];
-        }
-        const sel = document.getElementById('accType'); sel.innerHTML='';
-        data.accountCats.forEach(c => { sel.innerHTML += `<option value="${c}">${c}</option>`; });
-        
-        document.getElementById('accName').value = a.name;
-        document.getElementById('accType').value = a.type;
-        document.getElementById('accKind').value = a.kind;
-        document.getElementById('accCurr').value = a.currency;
-        document.getElementById('accInit').value = a.initBal;
-        document.getElementById('accDate').value = a.dateCreated || new Date().toISOString().split('T')[0];
-
-        document.getElementById('btnDelAcc').style.display='block';
-        document.getElementById('sheetAcc').classList.add('open');
-    }
-    function delAccount() { if(confirm('Borrar cuenta?')) { data.accounts = data.accounts.filter(x=>x.id!==editAccId); saveData(); closeAccSheet(); refreshAll(); } }
-
-    // --- TRANSACTION FORM LOGIC ---
-    function openNewTx() { 
-        if(isMonthClosed()) return alert("Mes Cerrado");
-        editId=null; editingSplitChildren=null; resetForm(); openSheet(); 
-    }
-    function openSheet() { document.getElementById('sheet').classList.add('open'); }
-    function closeSheet() { document.getElementById('sheet').classList.remove('open'); }
-    function resetForm() {
-        document.getElementById('txForm').reset(); document.getElementById('btnDel').style.display = 'none';
-        document.getElementById('splitWarning').style.display = 'none';
-        
-        const now = new Date(); const y=currentDate.getFullYear(), m=(currentDate.getMonth()+1).toString().padStart(2,'0');
-        const d=(y==now.getFullYear() && (currentDate.getMonth())==now.getMonth()) ? now.getDate().toString().padStart(2,'0') : '01';
-        document.getElementById('fDate').value = `${y}-${m}-${d}`;
-        updateAccountSelects();
-        setType('exp'); tempCat=''; tempLink=''; renderLinkChips();
-    }
-    function updateAccountSelects() {
-        const from = document.getElementById('fFromAcc'); const to = document.getElementById('fToAcc');
-        from.innerHTML = '<option value="">-- Seleccionar --</option>'; 
-        to.innerHTML = '<option value="">-- Seleccionar --</option>';
-        data.accounts.forEach(a => {
-            const opt = `<option value="${a.id}">${a.name} (${a.currency})</option>`;
-            from.innerHTML += opt; to.innerHTML += opt;
-        });
-    }
-
-    function setType(t) {
-        document.getElementById('fType').value = t;
-        document.getElementById('seg-exp').className = `tab-btn ${t=='exp'?'active':''}`;
-        document.getElementById('seg-inc').className = `tab-btn ${t=='inc'?'active':''}`;
-        document.getElementById('seg-trf').className = `tab-btn ${t=='transfer'?'active':''}`;
-        
-        const divCat = document.getElementById('div-cat');
-        const divDesc = document.getElementById('div-desc');
-        const linkSec = document.getElementById('linkSection');
-        const divFrom = document.getElementById('div-from');
-        const divTo = document.getElementById('div-to');
-
-        divCat.style.display = t=='transfer' ? 'none' : 'block';
-        divDesc.style.display = t=='transfer' ? 'block' : 'block';
-        linkSec.style.display = t=='exp' ? 'block' : 'none';
-        
-        divFrom.style.display = (t=='exp'||t=='transfer') ? 'block' : 'none';
-        divTo.style.display = (t=='inc'||t=='transfer') ? 'block' : 'none';
-
-        if(t!=='transfer') renderCatChips(t);
-    }
-    
-    function renderCatChips(type) {
-        const c = document.getElementById('catChips'); c.innerHTML='';
-        (data.cats[type]||[]).forEach(cat => {
-            const el = document.createElement('div'); el.className=`chip ${tempCat==cat?'active':''}`; el.innerText=cat;
-            el.onclick=()=>{ tempCat=cat; document.getElementById('fCat').value=cat; renderCatChips(type); renderConChips(cat); };
-            c.appendChild(el);
-        });
-        const add = document.createElement('div'); add.className='chip'; add.innerHTML='<i class="fas fa-plus"></i>';
-        add.onclick=()=>{ const n=prompt('Nueva:'); if(n){ if(!data.cats[type])data.cats[type]=[]; data.cats[type].push(n); data.concepts[n]=[]; saveData(); renderCatChips(type); }};
-        c.appendChild(add);
-        if(tempCat && (data.cats[type]||[]).includes(tempCat)) renderConChips(tempCat); else document.getElementById('conChips').innerHTML='';
-    }
-    function renderConChips(cat) {
-        const c = document.getElementById('conChips'); c.innerHTML='';
-        (data.concepts[cat]||[]).forEach(con => {
-            const el=document.createElement('div'); el.className=`chip ${document.getElementById('fConcept').value==con?'active':''}`; el.innerText=con;
-            el.onclick=()=>{ document.getElementById('fConcept').value=con; document.getElementById('fCustomDesc').style.display='none'; renderConChips(cat); };
-            c.appendChild(el);
-        });
-        const add=document.createElement('div'); add.className='chip'; add.innerText='...';
-        add.onclick=()=>{ document.getElementById('fConcept').value='new'; document.getElementById('fCustomDesc').style.display='block'; document.getElementById('fCustomDesc').focus(); renderConChips(cat); };
-        c.appendChild(add);
-    }
-    function renderLinkChips() {
-        const c=document.getElementById('linkChips'); c.innerHTML='';
-        const def=document.createElement('div'); def.className=`chip ${!tempLink?'active':''}`; def.innerText='Ninguno';
-        def.onclick=()=>{tempLink=''; document.getElementById('fLink').value=''; renderLinkChips();}; c.appendChild(def);
-        currentTxs.filter(t=>t.type=='inc').forEach(i=>{
-            const el=document.createElement('div'); el.className=`chip ${tempLink==i.id?'active':''}`; el.innerText=i.desc;
-            el.onclick=()=>{tempLink=i.id; document.getElementById('fLink').value=i.id; renderLinkChips();}; c.appendChild(el);
-        });
-    }
-
-    document.getElementById('txForm').onsubmit = (e) => {
-        e.preventDefault();
-        const type = document.getElementById('fType').value;
-        let cat = document.getElementById('fCat').value; 
-        
-        if(editingSplitChildren) {
-             cat = "Múltiples";
-        } else {
-             if(type!=='transfer' && !cat) return alert('Categoría?');
-             if(type==='transfer') cat = 'Transferencia';
-        }
-        
-        let desc = document.getElementById('fConcept').value;
-        if(type!=='transfer' && !editingSplitChildren && (desc=='new'||!desc)) { 
-            desc=document.getElementById('fCustomDesc').value; 
-            if(desc && !data.concepts[cat].includes(desc)) data.concepts[cat].push(desc); 
-        }
-        if(type==='transfer') desc = 'Transferencia';
-        if(editingSplitChildren) desc = document.getElementById('fCustomDesc').value || '(Varios)';
-
-        const origAmt = parseFloat(document.getElementById('fAmount').value);
-        const curr = document.getElementById('fCurr').value;
-        const rates = { ARS: parseFloat(document.getElementById('rateArs').value), COP: parseFloat(document.getElementById('rateCop').value) };
-        let amount = origAmt;
-        if(curr === 'USD') amount = origAmt * rates.ARS;
-        if(curr === 'COP') amount = (origAmt / rates.COP) * rates.ARS;
-        
-        const tx = {
-            id: editId || Date.now(), date: document.getElementById('fDate').value,
-            amount: amount, origAmt: origAmt, curr: curr,
-            type: type, cat: cat, desc: desc,
-            exec: document.getElementById('fExec').checked, linkId: document.getElementById('fLink').value || null,
-            fromAccountId: document.getElementById('fFromAcc').value || null,
-            toAccountId: document.getElementById('fToAcc').value || null,
-            children: editingSplitChildren || []
-        };
-        if(editId) { const i=data.txs.findIndex(x=>x.id==editId); if(i>-1) data.txs[i]=tx; } else data.txs.push(tx);
-        saveData(); closeSheet();
-    };
-
-    function edit(id) {
-        if(isMonthClosed()) return alert("Mes Cerrado");
-        editId=id; const t=data.txs.find(x=>x.id==id); if(!t)return;
-        updateAccountSelects();
-        document.getElementById('fAmount').value=t.origAmt||t.amount; document.getElementById('fCurr').value=t.curr||'ARS';
-        document.getElementById('fDate').value=t.date; document.getElementById('fExec').checked=t.exec;
-        document.getElementById('btnDel').style.display='block';
-        
-        editingSplitChildren = (t.children && t.children.length > 0) ? t.children : null;
-        
-        if(editingSplitChildren) {
-             document.getElementById('splitWarning').style.display = 'block';
-             document.getElementById('splitList').innerHTML = editingSplitChildren.map(c => `<div>- ${c.cat}: ${c.desc} ($${c.amount})</div>`).join('');
-             document.getElementById('div-cat').style.display='none';
-             document.getElementById('div-desc').style.display='block';
-             document.getElementById('conChips').innerHTML=''; 
-             document.getElementById('fCustomDesc').style.display='block';
-             document.getElementById('fCustomDesc').value = t.desc;
-             setType('exp');
-        } else {
-             document.getElementById('splitWarning').style.display = 'none';
-             setType(t.type); 
-             if(t.type!=='transfer') {
-                tempCat=t.cat; document.getElementById('fCat').value=t.cat; renderCatChips(t.type);
-                document.getElementById('fConcept').value=t.desc; renderConChips(t.cat);
-                if(!data.concepts[t.cat]?.includes(t.desc)){ document.getElementById('fConcept').value='new'; document.getElementById('fCustomDesc').style.display='block'; document.getElementById('fCustomDesc').value=t.desc; }
-                tempLink=t.linkId||''; document.getElementById('fLink').value=tempLink; renderLinkChips();
-            }
-        }
-        
-        if(t.fromAccountId) document.getElementById('fFromAcc').value = t.fromAccountId;
-        if(t.toAccountId) document.getElementById('fToAcc').value = t.toAccountId;
-        openSheet();
-    }
-    function delTx(){ if(confirm('Eliminar?')){ data.txs.find(x=>x.id==editId).deletedAt=Date.now(); saveData(); closeSheet(); }}
-    
-    // --- ALLOC, STATS, SETTINGS ---
-    function clearSearch(type) {
-        if(type === 'exp') { document.getElementById('searchBar').value = ''; filterExp(); } 
-        else { document.getElementById('allocSearch').value = ''; renderAlloc(); }
-    }
-    function filterExp() {
-        const term = document.getElementById('searchBar').value.toLowerCase();
-        document.querySelectorAll('#list-exp .tx-card').forEach(r => r.style.display = r.innerText.toLowerCase().includes(term) ? 'block' : 'none');
-    }
-    function unassignAll() { if(isMonthClosed())return; if(confirm("¿Desvincular TODOS?")) { currentTxs.forEach(t => { if(t.type === 'exp') t.linkId = null; }); saveData(); }}
-    function autoAssign() {
-        if(isMonthClosed())return;
-        if(!confirm("¿Auto-Asignar?")) return;
-        let incomes = currentTxs.filter(t => t.type === 'inc').map(i => {
-            const assigned = currentTxs.filter(e => e.type === 'exp' && e.linkId == i.id).reduce((a,b)=>a+b.amount,0);
-            return { ...i, balance: i.amount - assigned };
-        });
-        const unassignedExps = currentTxs.filter(t => t.type === 'exp' && !t.linkId);
-        let count = 0;
-        unassignedExps.forEach(exp => {
-            const validIncome = incomes.find(inc => inc.date <= exp.date && inc.balance >= exp.amount);
-            if(validIncome) { exp.linkId = validIncome.id; validIncome.balance -= exp.amount; count++; }
-        });
-        if(count > 0) { alert(`Asignados: ${count}`); saveData(); } else alert("Sin coincidencias");
-    }
-    function renderAlloc() {
-        const c = document.getElementById('alloc-list'); c.innerHTML='';
-        const term = document.getElementById('allocSearch').value.toLowerCase();
-        const incs = currentTxs.filter(t=>t.type=='inc');
-        const exps = currentTxs.filter(t=>t.type=='exp');
-
-        incs.forEach(inc => {
-            const subs = exps.filter(e => e.linkId == inc.id);
-            const spent = subs.reduce((a,b)=>a+b.amount,0);
-            const remaining = inc.amount - spent;
-            const pctLeft = Math.max(0, 100 - (inc.amount > 0 ? (spent/inc.amount)*100 : 0));
-            const color = remaining >= 0 ? 'var(--inc)' : 'var(--exp)';
-            const filteredSubs = term ? subs.filter(s => s.desc.toLowerCase().includes(term)) : subs;
-            
-            if(term && filteredSubs.length === 0 && !inc.desc.toLowerCase().includes(term)) return;
-
-            const card = document.createElement('div'); card.className='alloc-card';
-            let childHTML = '';
-            (term ? filteredSubs : subs).forEach(s => {
-                const day = s.date.split('-')[2];
-                childHTML += `<div class="child-row ${s.exec?'executed':''}" onclick="edit('${s.id}')"><span>${s.desc} <span style="font-size:8px; color:var(--txt-sec);">d-${day}</span></span><span>$${fmt(s.amount)}</span></div>`;
+            netWorthChartInst = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: 'Act', data: dataAssets, backgroundColor: '#10b981', stack: '0' },
+                        { label: 'Pas', data: dataLiabilities, backgroundColor: '#ef4444', stack: '0' }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
+                    scales: { x: { grid: { display: false }, ticks: { font: { size: 8 } } }, y: { ticks: { callback: v => '$' + (v/1000000).toFixed(1) + 'M', font: { size: 8 } } } }
+                }
             });
-            if(!subs.length) childHTML = '<div class="child-row" style="font-style:italic; color:#cbd5e1; cursor:default;">Sin gastos</div>';
+        }
+
+        function renderComposition(bal, rates) {
+            const ctx = document.getElementById('chartNWComp');
+            if(cNWComp) cNWComp.destroy();
+            const data = []; const labels = [];
+            appData.accounts.filter(a => a.kind === 'asset').forEach(a => {
+                const val = a.currency === 'ARS' ? bal[a.id] : (a.currency === 'USD' ? bal[a.id] * rates.ARS : (bal[a.id] / rates.COP) * rates.ARS);
+                if(val > 0) { labels.push(a.name); data.push(val); }
+            });
+            cNWComp = new Chart(ctx, {
+                type: 'doughnut',
+                data: { labels: labels, datasets: [{ data: data, backgroundColor: PALETTE, borderWidth: 0 }] },
+                options: { responsive: true, maintainAspectRatio: false, cutout: '60%', plugins: { legend: { display: false } } }
+            });
+        }
+
+        // =========================================================================
+        // GRÁFICOS Y UTILIDADES
+        // =========================================================================
+        function renderCharts(txs) {
+            const dt = txs.filter(t => t.type !== 'transfer');
+            const et = [];
+            dt.filter(t => t.type === 'exp').forEach(t => {
+                if(t.children && t.children.length) {
+                    t.children.forEach(c => et.push({ cat: c.cat, desc: c.desc, amount: c.amount }));
+                } else {
+                    et.push(t);
+                }
+            });
+            renderDoughnut(document.getElementById('chartExp'), document.getElementById('legExp'), et, 'cat', true, cExp, i => cExp = i);
+            renderDoughnut(document.getElementById('chartInc'), document.getElementById('legInc'), dt.filter(t => t.type === 'inc'), 'desc', false, cInc, i => cInc = i);
+        }
+
+        function renderDoughnut(cvs, leg, data, key, drill, inst, setInst) {
+            if(inst) inst.destroy();
+            let map = {};
+            if(drill && drillCat) {
+                document.getElementById('resetBtn').classList.remove('hidden');
+                data.filter(t => t.cat == drillCat).forEach(t => map[t.desc] = (map[t.desc] || 0) + t.amount);
+            } else {
+                if(drill) document.getElementById('resetBtn').classList.add('hidden');
+                data.forEach(t => { const k = t[key] || 'Gral'; map[k] = (map[k] || 0) + t.amount; });
+            }
+            const ent = Object.entries(map).sort((a,b) => b[1] - a[1]);
+            const tot = ent.reduce((a,b) => a + b[1], 0);
             
-            card.innerHTML = `
-                <div class="alloc-head">
-                    <div onclick="this.closest('.alloc-card').querySelector('.alloc-children').style.display = this.closest('.alloc-card').querySelector('.alloc-children').style.display=='block'?'none':'block'" style="flex:1;">
-                        <div style="font-weight:700; font-size:11px;">${inc.desc}</div>
-                        <div style="font-size:9px; color:var(--txt-sec);">Ingreso: $${fmt(inc.amount)}</div>
-                    </div>
-                    <div style="display:flex; align-items:center; gap:10px;">
-                        <div style="text-align:right;">
-                            <div style="font-weight:800; font-size:11px; color:${color}">$${fmt(remaining)}</div>
-                            <div style="font-size:9px; color:var(--txt-sec);">Disponible</div>
+            setInst(new Chart(cvs, {
+                type: 'doughnut',
+                data: { labels: ent.map(e => e[0]), datasets: [{ data: ent.map(e => e[1]), backgroundColor: PALETTE, borderWidth: 0 }] },
+                options: {
+                    responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { display: false } },
+                    onClick: (e, el) => { if(drill && !drillCat && el.length) { drillCat = ent[el[0].index][0]; loadMonthData(); } }
+                }
+            }));
+            
+            leg.innerHTML = '';
+            ent.forEach((e, i) => {
+                leg.innerHTML += `
+                    <div class="flex items-center justify-between text-[9px] py-1 border-b border-dashed border-slate-100 cursor-pointer hover:bg-slate-50 px-1 rounded" onclick="${drill && !drillCat ? `drillCat='${e[0]}';loadMonthData()` : ''}">
+                        <div class="flex items-center gap-1 min-w-0">
+                            <span class="size-1.5 rounded-full shrink-0" style="background:${PALETTE[i % PALETTE.length]}"></span>
+                            <span class="text-slate-600 font-medium truncate">${e[0]}</span>
                         </div>
-                        <i class="fas fa-unlink" style="color:#cbd5e1; font-size:10px; padding:4px;" onclick="unassignGroup('${inc.id}')"></i>
-                    </div>
-                </div>
-                <div class="alloc-prog"><div class="alloc-fill" style="width:${pctLeft}%; background:${color}"></div></div>
-                <div class="alloc-children" style="display:${term?'block':'none'}">${childHTML}</div>
-            `;
-            c.appendChild(card);
-        });
-
-        const orphans = exps.filter(e => !e.linkId);
-        const orphansFiltered = term ? orphans.filter(e => e.desc.toLowerCase().includes(term)) : orphans;
-        const orphansTotal = orphans.reduce((a,b)=>a+b.amount,0);
-
-        if(orphans.length > 0 && (!term || orphansFiltered.length > 0)) {
-             let orphanHTML = '';
-             orphansFiltered.forEach(s => {
-                  const day = s.date.split('-')[2];
-                  orphanHTML += `<div class="child-row ${s.exec?'executed':''}" onclick="edit('${s.id}')"><span>${s.desc} <span style="font-size:8px; color:var(--txt-sec);">d-${day}</span></span><span>$${fmt(s.amount)}</span></div>`;
-             });
-             c.innerHTML += `
-                <div class="alloc-card" style="border-left:4px solid var(--exp);">
-                    <div class="alloc-head" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display=='block'?'none':'block'">
-                        <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:700; width:100%;">
-                            <span>Sin Asignar (${orphansFiltered.length})</span>
-                            <span style="color:var(--exp);">$${fmt(orphansTotal)}</span>
+                        <div class="flex items-center gap-2 shrink-0">
+                            <span class="text-slate-400">${Math.round((e[1] / tot) * 100)}%</span>
+                            <span class="font-bold text-slate-800">$${fmt(e[1])}</span>
                         </div>
-                    </div>
-                    <div class="alloc-children" style="display:none; border-top:1px solid #f1f5f9;">${orphanHTML}</div>
-                </div>`;
+                    </div>`;
+            });
         }
-    }
 
-    function renderStats() {
-        renderSpecificChart('exp', drillCatExp, 'chartExp', 'legExp', 'resetExp', 'titleExp', 'Gastos por Categoría');
-        renderSpecificChart('inc', drillCatInc, 'chartInc', 'legInc', 'resetInc', 'titleInc', 'Ingresos por Categoría');
-    }
-    function renderSpecificChart(type, drillCat, canvasId, legendId, resetBtnId, titleId, defaultTitle) {
-        let txs = currentTxs.filter(t => t.type == type);
-        let key = 'cat';
-        if(drillCat) {
-            document.getElementById(resetBtnId).style.display = 'block';
-            document.getElementById(titleId).innerText = drillCat;
-            txs = txs.filter(t => t.cat === drillCat); key = 'desc'; 
-        } else {
-            document.getElementById(resetBtnId).style.display = 'none';
-            document.getElementById(titleId).innerText = defaultTitle;
+        function resetCharts() { drillCat = null; loadMonthData(); }
+
+        // =========================================================================
+        // ADMIN: ÁRBOL Y RECURRENTES
+        // =========================================================================
+        function renderAdminTree() {
+            const c = document.getElementById('adminTreeContainer');
+            c.innerHTML = '';
+            const buildBranch = (title, key) => {
+                const list = key === 'inc' ? appData.cats.inc : appData.cats.exp;
+                const iconColor = key === 'inc' ? 'text-emerald-500 bg-emerald-50' : 'text-rose-500 bg-rose-50';
+                const iconName = key === 'inc' ? 'trending_up' : 'trending_down';
+                let html = `<div class="mb-4 last:mb-0"><div class="flex items-center gap-2 mb-2 px-1"><span class="material-symbols-outlined text-sm p-1 rounded-md ${iconColor}">${iconName}</span><h4 class="font-bold text-[10px] text-slate-500 uppercase tracking-wider">${title}</h4></div><div class="space-y-2">`;
+                html += list.map(x => `<details class="group bg-white rounded-lg border border-slate-200 overflow-hidden open:shadow-sm open:ring-1 open:ring-primary/10 transition-all"><summary class="flex justify-between items-center p-2.5 cursor-pointer hover:bg-slate-50 select-none"><div class="flex items-center gap-2.5"><div class="bg-slate-100 p-1 rounded-md text-slate-400 group-open:text-primary group-open:bg-primary/10 transition-colors"><span class="material-symbols-outlined text-sm block">folder</span></div><span class="text-[11px] font-bold text-slate-700">${x}</span></div><div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"><button onclick="delCat('${key}','${x}')" class="size-6 flex items-center justify-center rounded-md text-slate-300 hover:text-red-500 hover:bg-red-50 transition-colors"><span class="material-symbols-outlined text-sm">delete</span></button><span class="material-symbols-outlined text-slate-300 text-sm group-open:rotate-180 transition-transform">expand_more</span></div></summary><div class="px-3 pb-3 pt-1 border-t border-slate-50 bg-slate-50/50"><div class="flex flex-wrap gap-1.5 mb-3">${(appData.concepts[x] || []).map(sc => `<div class="group/tag inline-flex items-center gap-1 px-2 py-1 bg-white border border-slate-200 rounded-md shadow-sm text-[10px] font-medium text-slate-600 hover:border-slate-300 transition-colors">${sc}<button onclick="delConcept('${x}','${sc}')" class="text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-full p-0.5 transition-colors opacity-50 group-hover/tag:opacity-100"><span class="material-symbols-outlined text-[10px] font-bold block">close</span></button></div>`).join('')}${(!appData.concepts[x] || appData.concepts[x].length === 0) ? '<span class="text-[9px] text-slate-400 italic py-1">Sin sub-conceptos</span>' : ''}</div><div class="flex gap-1 items-center bg-white p-1 rounded-md border border-slate-200 shadow-sm focus-within:ring-1 focus-within:ring-primary/30"><span class="material-symbols-outlined text-slate-300 text-xs pl-1">subdirectory_arrow_right</span><input id="newCon_${x}" placeholder="Añadir sub-concepto..." class="flex-1 text-[10px] border-none bg-transparent py-1 focus:ring-0 text-slate-700 placeholder:text-slate-300"><button onclick="manualAddConcept('${x}')" class="bg-slate-100 text-slate-600 hover:bg-primary hover:text-white rounded px-2 py-0.5 transition-colors"><span class="material-symbols-outlined text-xs">add</span></button></div></div></details>`).join('');
+                html += `</div></div>`;
+                c.innerHTML += html;
+            };
+            buildBranch("Gastos", "exp"); buildBranch("Ingresos", "inc");
         }
-        renderDoughnut(document.getElementById(canvasId), document.getElementById(legendId), txs, key, type);
-    }
-    function renderDoughnut(cvs, leg, txs, key, type) {
-        let map={}; txs.forEach(t=>{ const k=t[key]||'Gral'; map[k]=(map[k]||0)+t.amount; });
-        const ent = Object.entries(map).sort((a,b)=>b[1]-a[1]);
-        const tot = ent.reduce((a,b)=>a+b[1],0);
-        const chartInstance = Chart.getChart(cvs);
-        if(chartInstance) chartInstance.destroy();
-        new Chart(cvs, {
-            type: 'doughnut',
-            data: { labels: ent.map(e=>e[0]), datasets: [{ data: ent.map(e=>e[1]), backgroundColor: PALETTE, borderWidth:0 }] },
-            options: { 
-                responsive:true, maintainAspectRatio:false, cutout:'70%', animation: { duration: 0 }, plugins:{legend:{display:false}}, 
-                onClick:(e,el)=>{ if(el.length > 0) { const idx = el[0].index; const selected = ent[idx][0]; if(type === 'exp' && !drillCatExp) { drillCatExp = selected; renderStats(); } if(type === 'inc' && !drillCatInc) { drillCatInc = selected; renderStats(); } } }
-            } 
-        });
-        leg.innerHTML = '';
-        ent.forEach((e,i) => {
-            const pct = tot > 0 ? Math.round((e[1]/tot)*100) : 0;
-            leg.innerHTML += `<div class="legend-item" onclick="if('${type}'=='exp' && !drillCatExp){drillCatExp='${e[0]}';renderStats();} if('${type}'=='inc' && !drillCatInc){drillCatInc='${e[0]}';renderStats();}"><div style="display:flex; align-items:center; flex:1; min-width:0;"><div class="legend-dot" style="background:${PALETTE[i%PALETTE.length]}"></div><div class="legend-name">${e[0]}</div></div><div style="display:flex; align-items:center; gap:6px;"><span style="font-size:8px; color:var(--txt-sec);">${pct}%</span><span style="font-weight:700; font-size:10px; color:var(--txt);">$${fmt(e[1])}</span></div></div>`;
-        });
-    }
-    function resetChart(type) { if(type === 'exp') drillCatExp = null; if(type === 'inc') drillCatInc = null; renderStats(); }
 
-    function renderSettings() {
-        renderRecurrentesList();
-        renderAdminTree();
-    }
+        function manualAddCat() {
+            const n = document.getElementById('newCatName').value.trim(); const t = document.getElementById('newCatType').value;
+            if(!n) return; pushHistory();
+            if(t == 'exp') { if(!appData.cats.exp.includes(n)) appData.cats.exp.push(n); } else { if(!appData.cats.inc.includes(n)) appData.cats.inc.push(n); }
+            saveData(); renderAdminTree();
+        }
 
-    function renderRecurrentesList() {
-        const c = document.getElementById('list-recurrentes'); c.innerHTML='';
-        if(!data.recurrentes.length) { c.innerHTML='<div style="text-align:center; color:#cbd5e1; font-size:9px;">Sin datos</div>'; return; }
+        function manualAddConcept(c) {
+            const n = document.getElementById(`newCon_${c}`).value.trim();
+            if(!n) return; pushHistory();
+            if(!appData.concepts[c]) appData.concepts[c] = [];
+            if(!appData.concepts[c].includes(n)) appData.concepts[c].push(n);
+            saveData(); renderAdminTree();
+        }
+
+        function delCat(t, n) { if(confirm('¿Borrar?')) { pushHistory(); if(t == 'exp') appData.cats.exp = appData.cats.exp.filter(x => x !== n); else appData.cats.inc = appData.cats.inc.filter(x => x !== n); delete appData.concepts[n]; saveData(); renderAdminTree(); } }
+        function delConcept(c, n) { if(confirm('¿Borrar?')) { pushHistory(); appData.concepts[c] = appData.concepts[c].filter(x => x !== n); saveData(); renderAdminTree(); } }
+
+        function renderRecurrentesAdmin() {
+            const b = document.getElementById('recurrente-table-body'); b.innerHTML = '';
+            if (appData.recurrentes.length === 0) { b.innerHTML = `<div class="flex flex-col items-center justify-center h-32 text-slate-400 gap-2"><span class="material-symbols-outlined text-3xl opacity-20">playlist_add</span><p class="text-[10px] font-medium">No hay gastos fijos</p></div>`; return; }
+            appData.recurrentes.forEach((r, i) => {
+                b.innerHTML += `<div class="group bg-white rounded-lg p-2 border border-slate-100 mb-2 shadow-sm hover:shadow-md hover:border-primary/20 transition-all flex items-center gap-2"><span class="material-symbols-outlined text-slate-300 text-xs cursor-grab active:cursor-grabbing">drag_indicator</span><div class="flex-1 grid grid-cols-12 gap-2 items-center"><div class="col-span-5"><label class="text-[8px] font-bold text-slate-400 uppercase block mb-0.5 ml-1">Concepto</label><input value="${r.desc}" onchange="pushHistory();appData.recurrentes[${i}].desc=this.value" class="w-full bg-slate-50 border-none rounded-md px-2 py-1 text-[10px] font-bold text-slate-700 focus:bg-white focus:ring-1 focus:ring-primary placeholder:text-slate-300 transition-colors"></div><div class="col-span-3"><label class="text-[8px] font-bold text-slate-400 uppercase block mb-0.5 ml-1 text-right">Monto</label><input type="number" value="${r.amount}" onchange="pushHistory();appData.recurrentes[${i}].amount=parseFloat(this.value)" class="w-full bg-slate-50 border-none rounded-md px-2 py-1 text-[10px] font-bold text-slate-700 text-right focus:bg-white focus:ring-1 focus:ring-primary transition-colors"></div><div class="col-span-4"><label class="text-[8px] font-bold text-slate-400 uppercase block mb-0.5 ml-1">Categoría</label><div class="relative"><span class="absolute right-2 top-1/2 -translate-y-1/2 material-symbols-outlined text-[10px] text-slate-400 pointer-events-none">expand_more</span><select onchange="pushHistory();appData.recurrentes[${i}].cat=this.value" class="w-full bg-slate-50 border-none rounded-md pl-2 pr-4 py-1 text-[9px] font-semibold text-slate-600 focus:bg-white focus:ring-1 focus:ring-primary appearance-none cursor-pointer">${(appData.cats.exp || []).map(c => `<option value="${c}" ${r.cat === c ? 'selected' : ''}>${c}</option>`).join('')}</select></div></div></div><button onclick="deleteRecurrente(${i})" class="size-6 shrink-0 flex items-center justify-center rounded-md text-slate-300 hover:bg-red-50 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"><span class="material-symbols-outlined text-sm">close</span></button></div>`;
+            });
+        }
+
+        function addRecurrenteRow() { pushHistory(); appData.recurrentes.push({ desc: 'Nuevo', amount: 0, cat: 'Esenciales', type: 'exp' }); renderRecurrentesAdmin(); }
+        function deleteRecurrente(i) { pushHistory(); appData.recurrentes.splice(i, 1); saveData(); renderRecurrentesAdmin(); }
+
+        function executeRecurrentes() {
+            if(isMonthClosed()) return alert('Mes cerrado');
+            const y = currentDate.getFullYear(); const m = currentDate.getMonth() + 1; let c = 0;
+            appData.recurrentes.forEach(r => {
+                if(!appData.txs.some(t => !t.deletedAt && t.desc == r.desc && parseInt(t.date.split('-')[1]) == m)) {
+                    appData.txs.push({ ...r, id: Date.now() + Math.random(), date: `${y}-${m.toString().padStart(2,'0')}-01`, exec: false, linkId: null, deletedAt: null, origAmt: r.amount, origCurr: 'ARS', children: [] });
+                    c++;
+                }
+            });
+            if(c > 0) { pushHistory(); saveData(); alert(`Generados ${c}`); } else { alert('No hay pendientes'); }
+        }
+
+        // =========================================================================
+        // UTILIDADES VARIAS
+        // =========================================================================
+        function nav(v, el) {
+            document.querySelectorAll('.view-container').forEach(e => e.classList.add('hidden-view'));
+            document.getElementById(`view-${v}`).classList.remove('hidden-view');
+            document.querySelectorAll('#main-nav button').forEach(b => b.classList.remove('active-nav'));
+            if(el) el.classList.add('active-nav');
+            if(v === 'networth') renderNetWorthView();
+        }
+
+        function manualDate() {
+            const [y, m] = document.getElementById('datePicker').value.split('-');
+            currentDate.setFullYear(y); currentDate.setMonth(m - 1);
+            updateDateUI(); loadMonthData();
+        }
+
+        function changeMonth(d) { currentDate.setMonth(currentDate.getMonth() + d); updateDateUI(); loadMonthData(); }
+        function updateDateUI() { document.getElementById('monthTxt').innerText = `${MONTHS[currentDate.getMonth()]} ${currentDate.getFullYear()}`; document.getElementById('datePicker').value = getMonthKey(); }
         
-        const groups = {};
-        data.recurrentes.forEach((r, idx) => {
-             const cat = r.cat || 'Varios';
-             if(!groups[cat]) groups[cat] = [];
-             groups[cat].push({ ...r, idx }); 
-        });
+        function updateAccountSelects() {
+            const f = document.getElementById('fFromAcc'); const t = document.getElementById('fToAcc'); f.innerHTML = ''; t.innerHTML = '';
+            appData.accounts.forEach(a => { const o = `<option value="${a.id}">${a.name}</option>`; f.innerHTML += o; t.innerHTML += o; });
+        }
 
-        Object.keys(groups).forEach(cat => {
-            const node = document.createElement('div'); node.className='tree-node';
-            const items = groups[cat];
+        function renderChips(t) {
+            const c = document.getElementById('chipBox'); c.innerHTML = '';
+            (t == 'inc' ? appData.cats.inc : appData.cats.exp).forEach(x => {
+                const d = document.createElement('div'); d.className = `chip px-2 py-0.5 cursor-pointer ${document.getElementById('fCat').value == x ? 'active' : ''}`; d.innerText = x;
+                d.onclick = () => { document.getElementById('fCat').value = x; renderChips(t); renderConcepts(x); }; c.appendChild(d);
+            });
+        }
+
+        function renderConcepts(k) {
+            const c = document.getElementById('conceptBox'); c.innerHTML = '';
+            (appData.concepts[k] || []).forEach(x => {
+                const d = document.createElement('div'); d.className = 'cat-tag px-1.5 py-0.5 text-[9px] cursor-pointer'; d.innerText = x;
+                d.onclick = () => { document.getElementById('fDesc').value = x }; c.appendChild(d);
+            });
+        }
+
+        function renderLinkChips(sid) {
+            const c = document.getElementById('linkChipsContainer'); c.innerHTML = '';
+            appData.txs.filter(t => !t.deletedAt && t.type == 'inc' && t.date.startsWith(getMonthKey())).forEach(i => {
+                const d = document.createElement('div'); d.className = `chip px-2 py-0.5 cursor-pointer ${sid == i.id ? 'active' : ''}`; d.innerHTML = `<b>${i.desc}</b>`;
+                d.onclick = () => { document.getElementById('fLink').value = i.id; renderLinkChips(i.id); }; c.appendChild(d);
+            });
+        }
+
+        function calcConversion() {
+            const a = parseFloat(document.getElementById('fAmt').value) || 0; const c = document.getElementById('fCurr').value;
+            const ra = parseFloat(document.getElementById('rate_ARS').value); const rc = parseFloat(document.getElementById('rate_COP').value);
+            let r = a; if(c == 'USD') r = a * ra; else if(c == 'COP') r = (a / rc) * ra;
+            document.getElementById('convResult').innerText = `$${fmt(r)}`; return r;
+        }
+
+        function editTx(id) {
+            if(isMonthClosed()) return alert("Cerrado");
+            const t = appData.txs.find(x => x.id == id); if(!t) return;
+            editId = id;
+            document.getElementById('mTitle').innerText = 'Editar'; document.getElementById('btnDel').classList.remove('hidden');
+            document.getElementById('fDate').value = t.date;
+            document.getElementById('fAmt').value = t.origAmt || t.amount;
+            document.getElementById('fExec').checked = t.exec;
+            document.getElementById('fCurr').value = t.origCurr || 'ARS';
             
-            let itemsHtml = items.map(item => `
-                <div style="display:flex; justify-content:space-between; padding:4px 8px; border-bottom:1px solid #f1f5f9; font-size:10px; align-items:center;">
-                    <span onclick="editRecurrente(${item.idx})">${item.desc}</span>
-                    <div style="display:flex; gap:8px;">
-                        <b>$${fmt(item.amount)}</b>
-                        <i class="fas fa-trash" style="color:#cbd5e1; cursor:pointer;" onclick="delRecurrente(${item.idx})"></i>
-                    </div>
-                </div>
-            `).join('');
-
-            node.innerHTML = `
-                <div class="tree-head" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display=='block'?'none':'block'">
-                    <span>${cat} <span style="font-weight:400; color:#94a3b8;">(${items.length})</span></span>
-                </div>
-                <div class="tree-body" style="display:none; padding:0;">${itemsHtml}</div>
-            `;
-            c.appendChild(node);
-        });
-    }
-    function addRecurrenteUI() {
-        if(isMonthClosed())return;
-        const desc = prompt("Nombre:"); if(!desc) return;
-        const amount = prompt("Monto:"); if(!amount) return;
-        data.recurrentes.push({ desc: desc, amount: parseFloat(amount), cat: 'Esenciales', type: 'exp' });
-        saveData(); renderSettings();
-    }
-    function editRecurrente(i) {
-        if(isMonthClosed())return;
-        const r = data.recurrentes[i];
-        const newAmt = prompt('Nuevo monto para '+r.desc+':', r.amount);
-        if(newAmt) { data.recurrentes[i].amount = parseFloat(newAmt); saveData(); renderSettings(); }
-    }
-    function delRecurrente(i) {
-        if(isMonthClosed())return;
-        if(confirm('Borrar recurrente?')) { data.recurrentes.splice(i,1); saveData(); renderSettings(); }
-    }
-    
-    function populateRecurringDefaults() {
-        if(!confirm("¿Analizar 3 meses?")) return;
-        const limit = new Date(); limit.setDate(limit.getDate() - 90);
-        const isoLimit = limit.toISOString().split('T')[0];
-        const recent = data.txs.filter(t => !t.deletedAt && t.type === 'exp' && t.date >= isoLimit);
-        
-        const analysis = {};
-        recent.forEach(t => { 
-            const d = t.desc.trim(); 
-            if(!analysis[d]) analysis[d] = { count: 0, lastAmt: 0, cat: t.cat, dates: new Set() }; 
-            analysis[d].count++; analysis[d].lastAmt = t.origAmt || t.amount; analysis[d].cat = t.cat; analysis[d].dates.add(t.date.substring(0, 7)); 
-        });
-        
-        let added = 0;
-        Object.entries(analysis).forEach(([desc, info]) => {
-            const exists = data.recurrentes.some(r => r.desc.toLowerCase() === desc.toLowerCase());
-            if((info.dates.size >= 2 || info.count >= 3) && !exists) { 
-                data.recurrentes.push({ desc: desc, amount: info.lastAmt, cat: info.cat, type: 'exp' }); 
-                added++; 
+            setType(t.type);
+            
+            if(t.children && t.children.length) {
+                document.getElementById('fIsSplit').checked = true; toggleSplitUI();
+                document.getElementById('splitRows').innerHTML = '';
+                t.children.forEach(c => addSplitRow(c));
+                document.getElementById('fDesc').value = t.desc;
+            } else if(t.type !== 'transfer') {
+                document.getElementById('fCat').value = t.cat; renderChips(t.type);
+                document.getElementById('fDesc').value = t.desc; renderConcepts(t.cat);
+                if(t.type === 'exp') { document.getElementById('fLink').value = t.linkId || ''; renderLinkChips(t.linkId); }
             }
-        });
-        alert(`Análisis finalizado: ${added} gastos recurrentes nuevos encontrados.`);
-        saveData(); 
-        renderSettings();
-    }
-
-    function renderAdminTree() {
-        const c = document.getElementById('admin-tree'); c.innerHTML='';
-        
-        [{k:'exp', label:'Gastos'},{k:'inc', label:'Ingresos'}].forEach(type => {
-            (data.cats[type.k]||[]).forEach(cat => {
-                const node = document.createElement('div'); node.className='tree-node';
-                const concepts = data.concepts[cat]||[];
-                node.innerHTML = `<div class="tree-head" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display=='flex'?'none':'flex'"><span>${cat} <span style="font-weight:400; color:#94a3b8;">(${type.label} - ${concepts.length})</span></span><i class="fas fa-trash" style="color:#cbd5e1; font-size:9px;" onclick="event.stopPropagation();delCat('${type.k}','${cat}')"></i></div><div class="tree-body" style="display:none;">${concepts.map(con => `<div class="concept-tag">${con} <i class="fas fa-times" style="color:#cbd5e1; cursor:pointer;" onclick="delCon('${cat}','${con}')"></i></div>`).join('')}<div class="concept-tag" style="background:white; border:1px dashed #cbd5e1; color:var(--accent); cursor:pointer;" onclick="addCon('${cat}')">+</div></div>`;
-                c.appendChild(node);
-            });
-        });
-
-        const nodeAcc = document.createElement('div'); nodeAcc.className='tree-node';
-        const accCats = data.accountCats || [];
-        nodeAcc.innerHTML = `
-            <div class="tree-head" style="background:#EEF2FF; color:#312E81;" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display=='flex'?'none':'flex'">
-                <span>Tipos de Cuenta <span style="font-weight:400;">(${accCats.length})</span></span>
-            </div>
-            <div class="tree-body" style="display:none;">
-                ${accCats.map(cat => `<div class="concept-tag">${cat} <i class="fas fa-trash" style="color:#cbd5e1; cursor:pointer;" onclick="delAccCat('${cat}')"></i></div>`).join('')}
-                <div class="concept-tag" style="background:white; border:1px dashed #cbd5e1; color:var(--accent); cursor:pointer;" onclick="addAccCat()">+</div>
-            </div>
-        `;
-        c.appendChild(nodeAcc);
-    }
-    
-    function delCat(t,c){ if(isMonthClosed())return; if(confirm('Borrar?')) { data.cats[t]=data.cats[t].filter(x=>x!==c); delete data.concepts[c]; saveData(); renderSettings(); }}
-    function delCon(c,n){ if(isMonthClosed())return; if(confirm('Borrar?')) { data.concepts[c]=data.concepts[c].filter(x=>x!==n); saveData(); renderSettings(); }}
-    function addCon(c){ if(isMonthClosed())return; const n=prompt('Nueva:'); if(n){ if(!data.concepts[c])data.concepts[c]=[]; data.concepts[c].push(n); saveData(); renderSettings(); }}
-    function delAccCat(c){ if(isMonthClosed())return; if(confirm('¿Borrar tipo de cuenta?')) { data.accountCats = data.accountCats.filter(x=>x!==c); saveData(); renderSettings(); }}
-    function addAccCat(){ if(isMonthClosed())return; const n=prompt('Nuevo Tipo de Cuenta:'); if(n){ if(!data.accountCats)data.accountCats=[]; data.accountCats.push(n); saveData(); renderSettings(); }}
-
-    function executeRecurrentes() {
-        if(isMonthClosed())return;
-        const txt = document.getElementById('monthTxt').innerText; if(!confirm(`¿Ejecutar en ${txt}?`)) return;
-        const y=currentDate.getFullYear(), m=currentDate.getMonth()+1; let c=0;
-        data.recurrentes.forEach(r=>{
-            if(!data.txs.some(t=>!t.deletedAt && t.desc==r.desc && parseInt(t.date.split('-')[0])==y && parseInt(t.date.split('-')[1])==m)){
-                 data.txs.push({...r, id:Date.now()+Math.random(), date:`${y}-${m.toString().padStart(2,'0')}-01`, exec:false, linkId:null, deletedAt:null, origAmt:r.amount, curr:'ARS'}); c++;
-            }
-        });
-        alert(c>0 ? `Generados ${c}` : 'Ya estaban'); saveData();
-    }
-    
-    // --- UTILS & MONTH CLOSE ---
-    function toggleMonthClose() {
-        const key = getKey();
-        if(data.closedMonths[key]) {
-            if(confirm("¿Reabrir mes?")) { delete data.closedMonths[key]; saveData(); }
-        } else {
-            if(confirm("¿Cerrar mes? No podrás editar.")) { data.closedMonths[key] = true; saveData(); }
+            if(t.fromAccountId) document.getElementById('fFromAcc').value = t.fromAccountId;
+            if(t.toAccountId) document.getElementById('fToAcc').value = t.toAccountId;
+            calcConversion(); document.getElementById('modalOverlay').classList.remove('hidden');
         }
-    }
 
-    function cloneTx(id) {
-        if(isMonthClosed()) return alert("Mes Cerrado");
-        const t = data.txs.find(x => x.id == id); if(!t) return;
-        if(!confirm("¿Clonar " + t.desc + "?")) return;
-        const currentY = currentDate.getFullYear();
-        const currentM = (currentDate.getMonth() + 1).toString().padStart(2, '0');
-        const newDate = `${currentY}-${currentM}-${t.date.split('-')[2]}`;
-        const newTx = {...t, id: Date.now(), date: newDate, exec: false};
-        data.txs.push(newTx); saveData();
-    }
-    function openCloneModal() {
-        if(isMonthClosed()) return alert("Mes Cerrado");
-        const sel = document.getElementById('selCloneSrc'); sel.innerHTML = '';
-        const months = new Set(); data.txs.forEach(t => { if(!t.deletedAt) months.add(t.date.slice(0, 7)); });
-        Array.from(months).sort().reverse().forEach(m => { const opt = document.createElement('option'); opt.value = m; opt.innerText = m; sel.appendChild(opt); });
-        document.getElementById('modalClone').classList.add('open');
-    }
-    function doCloneMonth() {
-        const srcMonth = document.getElementById('selCloneSrc').value; if(!srcMonth) return;
-        const srcTxs = data.txs.filter(t => !t.deletedAt && t.date.startsWith(srcMonth)); if(srcTxs.length === 0) return alert('Mes vacío');
-        const targetY = currentDate.getFullYear(); const targetM = (currentDate.getMonth() + 1).toString().padStart(2,'0');
-        const mapIds = {}; const newTxs = [];
-        srcTxs.filter(t => t.type === 'inc').forEach(t => { const newId = Date.now() + Math.random(); mapIds[t.id] = newId; newTxs.push({...t, id: newId, date: `${targetY}-${targetM}-01`, exec: false}); });
-        srcTxs.filter(t => t.type === 'exp').forEach(t => { newTxs.push({...t, id: Date.now() + Math.random(), date: `${targetY}-${targetM}-01`, exec: false, linkId: t.linkId ? mapIds[t.linkId] : null }); });
-        data.txs.push(...newTxs); saveData(); document.getElementById('modalClone').classList.remove('open');
-    }
-    function clearMonth(){ 
-        if(isMonthClosed()) return alert("Mes Cerrado");
-        if(confirm('¿Borrar TODO este mes?')) { const y=currentDate.getFullYear(), m=currentDate.getMonth()+1; data.txs.forEach(t=>{ if(parseInt(t.date.split('-')[0])==y && parseInt(t.date.split('-')[1])==m) t.deletedAt=Date.now(); }); saveData(); }
-    }
-    function nav(v) {
-        document.querySelectorAll('.view-section').forEach(e=>e.classList.remove('active'));
-        document.querySelectorAll('.nav-btn').forEach(e=>e.classList.remove('active'));
-        document.getElementById(`view-${v}`).classList.add('active');
-        document.getElementById(`nav-${v}`).classList.add('active');
-        if(v=='networth') renderNetWorth();
-        if(v=='stats') renderStats(); if(v=='settings') renderSettings();
-    }
-    function setSubTab(t) {
-        document.getElementById('sec-txs').style.display=t=='txs'?'flex':'none';
-        document.getElementById('sec-alloc').style.display=t=='alloc'?'block':'none';
-        document.getElementById('tab-txs').className=`tab-btn ${t=='txs'?'active':''}`;
-        document.getElementById('tab-alloc').className=`tab-btn ${t=='alloc'?'active':''}`;
-    }
-    
-    // *** UNIFIED SYNC ENGINE ***
-    async function forceSync() {
-        const syncDot = document.getElementById('syncDot');
-        syncDot.className = 'sync-dot sync-spin'; 
-        try { 
-            const r = await fetch(API_URL + '?t=' + Date.now(), { cache: "no-store" }); 
-            const d = await r.json(); 
-            if(d && d.txs) { 
-                data = d; 
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-                refreshAll(); 
-                syncDot.className = 'sync-dot';
-                syncDot.style.background='#10B981'; 
-            } 
-        } catch(e){ 
-            console.error(e); 
-            syncDot.className = 'sync-dot';
-            syncDot.style.background='#EF4444'; 
+        function delTx() { if(confirm('¿Borrar?')) { pushHistory(); appData.txs.find(x => x.id == editId).deletedAt = Date.now(); saveData(); closeModal(); } }
+        function toggleExec(id, e) { e.stopPropagation(); if(isMonthClosed()) return alert("Cerrado"); pushHistory(); const t = appData.txs.find(x => x.id == id); t.exec = !t.exec; saveData(); }
+
+        function openAccountModal() { editAccId = null; document.getElementById('accForm').reset(); document.getElementById('btnDelAcc').classList.add('hidden'); document.getElementById('accModal').classList.remove('hidden'); }
+        function closeAccountModal() { document.getElementById('accModal').classList.add('hidden'); }
+        function saveAccount(e) {
+            e.preventDefault(); pushHistory();
+            const a = { id: editAccId || 'acc_' + Date.now(), name: document.getElementById('accName').value, kind: document.getElementById('accKind').value, currency: document.getElementById('accCurr').value, initBal: parseFloat(document.getElementById('accInit').value) || 0 };
+            if(editAccId) { const i = appData.accounts.findIndex(x => x.id == editAccId); appData.accounts[i] = a; } else { appData.accounts.push(a); }
+            saveData(); closeAccountModal();
         }
-    }
-
-    function saveData() {
-        // 1. Backup local inmediato
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-        refreshAll(); 
-
-        const syncDot = document.getElementById('syncDot');
-        syncDot.style.background='#F59E0B'; 
-        syncDot.className = 'sync-dot sync-spin'; 
-
-        if(saveTimer) clearTimeout(saveTimer);
+        function deleteAccount() { if(!confirm('¿Borrar?')) return; pushHistory(); appData.accounts = appData.accounts.filter(x => x.id !== editAccId); saveData(); closeAccountModal(); }
+        function editAccount(id) { editAccId = id; const a = appData.accounts.find(x => x.id == id); document.getElementById('accName').value = a.name; document.getElementById('accKind').value = a.kind; document.getElementById('accCurr').value = a.currency; document.getElementById('accInit').value = a.initBal; document.getElementById('btnDelAcc').classList.remove('hidden'); document.getElementById('accModal').classList.remove('hidden'); }
         
-        saveTimer = setTimeout(() => {
-            fetch(API_URL, {
-                method: 'POST',
-                redirect: 'follow', // IMPORTANTE
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify(data)
-            })
-            .then(response => response.json())
-            .then(result => {
-                 // Si llega aquí, el GAS respondió OK
-                 syncDot.className = 'sync-dot';
-                 syncDot.style.background='#10B981'; 
-            })
-            .catch(e => {
-                 console.error(e);
-                 syncDot.className = 'sync-dot';
-                 syncDot.style.background='#EF4444'; 
-                 alert("Error de red al guardar en la nube.");
+        function saveMonthlyRates() { const k = getMonthKey(); appData.monthlyRates[k] = { ARS: parseFloat(document.getElementById('rate_ARS').value), COP: parseFloat(document.getElementById('rate_COP').value), USD: 1 }; saveData(); }
+        
+        function autoAssign() {
+            if(isMonthClosed()) return alert("Cerrado"); if(!confirm("¿Auto asignar?")) return;
+            const txs = getFilteredTxs(); let c = 0;
+            txs.filter(t => t.type == 'exp' && !t.linkId).forEach(e => {
+                const i = txs.find(inc => inc.type == 'inc' && inc.date <= e.date && (inc.amount - txs.filter(x => x.linkId == inc.id).reduce((a, b) => a + b.amount, 0)) >= e.amount);
+                if(i) { e.linkId = i.id; c++; }
             });
-        }, 500); 
-    }
-</script>
+            if(c > 0) { pushHistory(); saveData(); alert(`Asignados ${c}`); } else { alert('Sin coincidencias'); }
+        }
+        function unassignAll() { if(isMonthClosed()) return alert("Cerrado"); if(!confirm("¿Desvincular todo?")) return; pushHistory(); getFilteredTxs().forEach(t => { if(t.type == 'exp') t.linkId = null }); saveData(); }
+        function unassignGroup(id) { if(isMonthClosed()) return alert("Cerrado"); if(!confirm("¿Desvincular grupo?")) return; pushHistory(); appData.txs.filter(t => t.linkId == id).forEach(t => t.linkId = null); saveData(); }
+        
+        function populateRecurringDefaults() {
+            if(!confirm("¿Sugerir?")) return; const lim = new Date(); lim.setDate(lim.getDate() - 90);
+            const rec = appData.txs.filter(t => !t.deletedAt && t.type == 'exp' && new Date(t.date) >= lim);
+            const an = {}; rec.forEach(t => { if(!an[t.desc]) an[t.desc] = { c: 0, a: t.origAmt || t.amount, k: t.cat }; an[t.desc].c++; });
+            let c = 0; Object.entries(an).forEach(([d, v]) => { if(v.c >= 2 && !appData.recurrentes.some(r => r.desc == d)) { appData.recurrentes.push({ desc: d, amount: v.a, cat: v.k, type: 'exp' }); c++; } });
+            if(c > 0) { pushHistory(); saveData(); renderRecurrentesAdmin(); alert(`Sugeridos ${c}`); } else { alert('Nada nuevo'); }
+        }
+
+        function closeMonth() { if(!confirm("¿Cerrar mes?")) return; pushHistory(); appData.closedMonths[getMonthKey()] = true; saveData(); }
+        function reopenMonth() { if(!confirm("¿Reabrir?")) return; pushHistory(); delete appData.closedMonths[getMonthKey()]; saveData(); }
+    </script>
 </body>
 </html>
