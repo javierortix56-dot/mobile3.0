@@ -1370,24 +1370,34 @@
     }
 
     function saveData() {
+        // 1. Backup local inmediato
         localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
         refreshAll(); 
 
         const syncDot = document.getElementById('syncDot');
         syncDot.style.background='#F59E0B'; 
+        syncDot.className = 'sync-dot sync-spin'; 
 
         if(saveTimer) clearTimeout(saveTimer);
+        
         saveTimer = setTimeout(() => {
             fetch(API_URL, {
-                method: 'POST', 
-                mode: 'no-cors', 
-                headers: { 'Content-Type': 'text/plain' },
+                method: 'POST',
+                redirect: 'follow', // IMPORTANTE
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 body: JSON.stringify(data)
-            }).then(() => {
+            })
+            .then(response => response.json())
+            .then(result => {
+                 // Si llega aquí, el GAS respondió OK
+                 syncDot.className = 'sync-dot';
                  syncDot.style.background='#10B981'; 
-            }).catch(e => {
+            })
+            .catch(e => {
                  console.error(e);
+                 syncDot.className = 'sync-dot';
                  syncDot.style.background='#EF4444'; 
+                 alert("Error de red al guardar en la nube.");
             });
         }, 500); 
     }
