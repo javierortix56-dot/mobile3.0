@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#0F172A">
-    <title>Finanzas J&M Pro - Chunked</title>
+    <title>Finanzas J&M Mobile</title>
     
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -34,9 +34,12 @@
         }
         .brand { font-weight: 800; font-size: 13px; letter-spacing: -0.3px; display:flex; gap:6px; align-items:center; color: var(--primary); white-space: nowrap; }
         
-        .sync-dot { width:10px; height:10px; border-radius:50%; background:#CBD5E1; transition:0.3s; box-shadow: 0 0 0 2px white; cursor: pointer; }
-        .sync-dot:active { transform: scale(1.2); }
-        .sync-spin { animation: spin 1s linear infinite; border: 2px solid #3B82F6; border-top: 2px solid transparent; background: transparent !important; }
+        /* SYNC DOT STATES */
+        .sync-dot { width:10px; height:10px; border-radius:50%; background:#10B981; transition:0.3s; box-shadow: 0 0 0 2px white; cursor: pointer; }
+        .sync-dot.pending { background: #F59E0B; } /* Naranja: Cambios locales */
+        .sync-dot.saving { background: transparent; border: 2px solid #3B82F6; border-top: 2px solid transparent; animation: spin 1s linear infinite; } /* Azul Girando: Subiendo */
+        .sync-dot.error { background: #EF4444; } /* Rojo: Error */
+        
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
         .date-pill { background: rgba(0,0,0,0.03); border-radius: 99px; padding: 4px 10px; display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 12px; border: 1px solid rgba(0,0,0,0.05); }
@@ -186,7 +189,7 @@
     <div class="brand">
         <i class="fas fa-lock lock-badge" id="lockIcon" style="display:none;"></i>
         Finanzas J&M Pro 
-        <div id="syncDot" class="sync-dot" onclick="forceSync()"></div>
+        <div id="syncDot" class="sync-dot" onclick="forceSync()" title="Estado Sync"></div>
     </div>
     <div class="date-pill" onclick="changeMonth(0)"> 
         <button class="btn-arrow" onclick="event.stopPropagation(); changeMonth(-1)"><i class="fas fa-chevron-left"></i></button>
@@ -355,7 +358,7 @@
             <input type="hidden" id="fType" value="exp">
             
             <div id="splitWarning" style="display:none; background:#EEF2FF; border:1px dashed #6366F1; padding:8px; border-radius:8px; margin-bottom:10px; font-size:10px; color:#312E81;">
-                <i class="fas fa-info-circle"></i> <b>Es un Split (Dividido)</b><br>
+                <i class="fas fa-info-circle"></i> <b>Es un Split (Dividido)</b>
                 Los items se preservarán. Solo puedes editar fecha, ejecutado y totales aquí.
                 <div id="splitList" style="margin-top:5px; padding-left:10px; font-size:9px; opacity:0.8;"></div>
             </div>
@@ -467,12 +470,17 @@
 </div>
 
 <script>
-    // --- TU NUEVA URL DEL SCRIPT ---
-    const API_URL = "https://script.google.com/macros/s/AKfycbwQSIZm3ut6lJQsh3K2kF2Gj58GiY_6M3iObjslOtVfS9eW26WQM57psfKke2Y-Avws/exec";
+    // --- URL ACTUALIZADA Y CORRECTA ---
+    const API_URL = "https://script.google.com/macros/s/AKfycbxWA69r-NoWYQExkOyVGzTHWHQ0oo6ROpeBxMapByWgQ8et7EnavdeLscRqX13wZfVi/exec";
+    const DEVICE_ID = (() => {
+      let v = localStorage.getItem("ff_device_id");
+      if (!v) { v = String(Date.now()) + "_" + Math.random(); localStorage.setItem("ff_device_id", v); }
+      return v;
+    })();
     
     const MONTHS = ["ENE","FEB","MAR","ABR","MAY","JUN","JUL","AGO","SEP","OCT","NOV","DIC"];
     const PALETTE = ['#3B82F6','#10B981','#F59E0B','#EF4444','#8B5CF6','#64748B','#EC4899','#14B8A6'];
-    const STORAGE_KEY = 'finance_unified_javi';
+    const STORAGE_KEY = 'financeFlowData_Javi_Turbo'; // Usamos el mismo Key que la versión PC para compartir
 
     let data = { 
         txs: [], 
@@ -483,8 +491,7 @@
         recurrentes: [], 
         monthlyRates: {},
         closedMonths: {},
-        // IMPORTANTE: Campo Meta para el nuevo backend
-        meta: { schema: 2, updatedAt: 0, lastWriter: "web" }
+        updatedAt: 0 
     };
     
     let currentTxs = [], editId = null, editAccId = null;
@@ -497,8 +504,8 @@
     const fmt = (n) => n.toLocaleString('es-AR', {minimumFractionDigits: 0, maximumFractionDigits: 0});
     const fmtUsd = (n) => (n/1000).toFixed(1) + 'K';
 
+    // --- LÓGICA DE SINCRONIZACIÓN OPTIMIZADA (LOCAL FIRST + DEBOUNCE) ---
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') forceSync(); });
-
     window.onload = () => { loadLocal(); updateDateUI(); forceSync(); };
 
     function updateDateUI() { 
@@ -526,7 +533,6 @@
         if(!data.closedMonths) data.closedMonths = {};
         if(!data.accountCats || !data.accountCats.length) data.accountCats = ['Efectivo', 'Banco', 'Inversiones', 'Cripto', 'Tarjeta', 'Otro'];
         if(!data.recurrentes) data.recurrentes = [];
-        if(!data.meta) data.meta = { schema: 2, updatedAt: 0, lastWriter: "web" };
     }
 
     function refreshAll() {
@@ -544,6 +550,8 @@
         document.getElementById('btnCloseMonth').style.border = closed ? '1px solid #CBD5E1' : 'none';
 
         currentTxs = (data.txs || []).filter(t => !t.deletedAt && parseInt(t.date.split('-')[0]) === y && parseInt(t.date.split('-')[1]) === m);
+        
+        // Calculo visual de conversión (solo para mostrar)
         currentTxs.forEach(t => {
             if(!t.exec && t.curr && t.curr!=='ARS') {
                 if(t.curr === 'USD') t.amount = t.origAmt * rates.ARS;
@@ -559,7 +567,7 @@
         if(document.getElementById('view-networth').classList.contains('active')) renderNetWorth();
     }
 
-    // --- RENDERIZADO (IGUAL QUE ANTES) ---
+    // --- RENDERIZADO VISUAL ---
     function renderDash() {
         const inc = currentTxs.filter(t=>t.type=='inc').reduce((a,b)=>a+b.amount,0);
         const exp = currentTxs.filter(t=>t.type=='exp').reduce((a,b)=>a+b.amount,0);
@@ -817,7 +825,7 @@
     }
     function renderDoughnut(cvs, leg, txs, key, type) {
         let map={}; txs.forEach(t=>{ const k=t[key]||'Gral'; map[k]=(map[k]||0)+t.amount; });
-        const ent = Object.entries(map).sort((a,b)=>b[1]-a[1]); const tot = ent.reduce((a,b)=>a+b[1],0);
+        const ent = Object.entries(map).sort((a,b)=>b[1]-a[1]); const tot = ent.reduce((a,b)=>a+b.amount,0);
         const chartInstance = Chart.getChart(cvs); if(chartInstance) chartInstance.destroy();
         new Chart(cvs, { type: 'doughnut', data: { labels: ent.map(e=>e[0]), datasets: [{ data: ent.map(e=>e[1]), backgroundColor: PALETTE, borderWidth:0 }] }, options: { responsive:true, maintainAspectRatio:false, cutout:'70%', animation: { duration: 0 }, plugins:{legend:{display:false}}, onClick:(e,el)=>{ if(el.length > 0) { const idx = el[0].index; const selected = ent[idx][0]; if(type === 'exp' && !drillCatExp) { drillCatExp = selected; renderStats(); } if(type === 'inc' && !drillCatInc) { drillCatInc = selected; renderStats(); } } } } });
         leg.innerHTML = ''; ent.forEach((e,i) => { leg.innerHTML += `<div class="legend-item" onclick="if('${type}'=='exp' && !drillCatExp){drillCatExp='${e[0]}';renderStats();} if('${type}'=='inc' && !drillCatInc){drillCatInc='${e[0]}';renderStats();}"><div style="display:flex; align-items:center; flex:1; min-width:0;"><div class="legend-dot" style="background:${PALETTE[i%PALETTE.length]}"></div><div class="legend-name">${e[0]}</div></div><div style="display:flex; align-items:center; gap:6px;"><span style="font-size:8px; color:var(--txt-sec);">${Math.round((e[1]/tot)*100)}%</span><span style="font-weight:700; font-size:10px; color:var(--txt);">$${fmt(e[1])}</span></div></div>`; });
@@ -884,62 +892,69 @@
     function nav(v) { document.querySelectorAll('.view-section').forEach(e=>e.classList.remove('active')); document.querySelectorAll('.nav-btn').forEach(e=>e.classList.remove('active')); document.getElementById(`view-${v}`).classList.add('active'); document.getElementById(`nav-${v}`).classList.add('active'); if(v=='networth') renderNetWorth(); if(v=='stats') renderStats(); if(v=='settings') renderSettings(); }
     function setSubTab(t) { document.getElementById('sec-txs').style.display=t=='txs'?'flex':'none'; document.getElementById('sec-alloc').style.display=t=='alloc'?'block':'none'; document.getElementById('tab-txs').className=`tab-btn ${t=='txs'?'active':''}`; document.getElementById('tab-alloc').className=`tab-btn ${t=='alloc'?'active':''}`; }
     
-    // *** NUEVA LÓGICA DE SINCRONIZACIÓN (GET) ***
+    // *** NUEVA LÓGICA DE SINCRONIZACIÓN (TURBO + TEXTO PLANO) ***
+    
+    // 1. Force Sync: Intenta descargar cambios de la nube (GET)
     async function forceSync() {
-        const syncDot = document.getElementById('syncDot'); syncDot.className = 'sync-dot sync-spin'; 
+        const syncDot = document.getElementById('syncDot'); 
+        syncDot.className = 'sync-dot saving'; // Azul girando
         try { 
             const r = await fetch(API_URL + '?t=' + Date.now()); 
             const d = await r.json(); 
-            // Combinar inteligentemente si es más reciente
-            if(d && d.meta && d.meta.updatedAt > (data.meta.updatedAt||0)) {
+            // Si la nube tiene datos más recientes, actualizamos local
+            if(d && d.updatedAt > (data.updatedAt||0)) {
                 data = d; 
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
                 refreshAll(); 
             }
-            syncDot.className = 'sync-dot'; syncDot.style.background='#10B981'; 
+            syncDot.className = 'sync-dot'; // Verde (OK)
         } catch(e){ 
-            console.error(e); 
-            syncDot.className = 'sync-dot'; syncDot.style.background='#EF4444'; 
+            console.error("Error Sync:", e); 
+            // Si falla, volvemos a estado pendiente (naranja) si hay cambios locales, o rojo si error grave
+            syncDot.className = 'sync-dot error'; 
+            setTimeout(() => syncDot.className = 'sync-dot pending', 2000);
         }
     }
 
-    // *** NUEVA LÓGICA DE GUARDADO (POST - TEXT RESPONSE) ***
+    // 2. Save Data: Guarda local y agenda subida (Debounce 3s)
     function saveData() {
-        // 1. Actualizar Timestamp local antes de enviar
-        if(!data.meta) data.meta = {};
-        data.meta.updatedAt = Date.now();
+        // Actualizamos timestamp local
+        data.updatedAt = Date.now();
+        data._writer = DEVICE_ID; // Identificar dispositivo
 
+        // Guardado Local Inmediato
         localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
         refreshAll(); 
 
+        // Feedback visual: Naranja (Pendiente de subir)
         const syncDot = document.getElementById('syncDot');
-        syncDot.style.background='#F59E0B'; syncDot.className = 'sync-dot sync-spin'; 
+        syncDot.className = 'sync-dot pending'; 
 
+        // Reiniciar timer (Debounce)
         if(saveTimer) clearTimeout(saveTimer);
         
         saveTimer = setTimeout(() => {
+            syncDot.className = 'sync-dot saving'; // Azul girando
+            
             fetch(API_URL, {
                 method: 'POST',
-                // Enviamos string plano para evitar CORS preflight complex
+                // TRUCO: Enviamos como string plano para evitar errores CORS complejos
                 body: JSON.stringify(data) 
             })
-            .then(res => res.text()) // Esperamos TEXTO, NO JSON ('OK')
+            .then(res => res.text()) // Esperamos respuesta de texto ("OK")
             .then(text => {
-                 if(text.includes('OK')) {
-                     syncDot.className = 'sync-dot';
-                     syncDot.style.background='#10B981'; 
+                 if(text.includes('OK') || text.includes('success')) {
+                     syncDot.className = 'sync-dot'; // Verde (Éxito)
                  } else {
                      console.warn("Respuesta servidor:", text);
-                     syncDot.className = 'sync-dot';
-                     syncDot.style.background='#EF4444'; // Algo raro pasó
+                     syncDot.className = 'sync-dot error';
                  }
             })
             .catch(e => {
-                 console.error("Error save:", e);
-                 syncDot.className = 'sync-dot';
-                 syncDot.style.background='#EF4444'; 
+                 console.error("Error al subir:", e);
+                 syncDot.className = 'sync-dot error'; // Rojo
             });
-        }, 500); 
+        }, 3000); // Espera 3 segundos de inactividad
     }
 </script>
 </body>
