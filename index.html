@@ -189,7 +189,7 @@
     <div class="brand">
         <i class="fas fa-lock lock-badge" id="lockIcon" style="display:none;"></i>
         Finanzas J&M Pro 
-        <div id="syncDot" class="sync-dot" onclick="forceSync()" title="Estado Sync"></div>
+        <div id="syncDot" class="sync-dot" onclick="forceDownload()" title="Estado Sync"></div>
     </div>
     <div class="date-pill" onclick="changeMonth(0)"> 
         <button class="btn-arrow" onclick="event.stopPropagation(); changeMonth(-1)"><i class="fas fa-chevron-left"></i></button>
@@ -323,7 +323,13 @@
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
                 <button onclick="executeRecurrentes()" style="padding:10px; background:white; border:1px solid var(--border); border-radius:8px; font-size:9px; font-weight:700;">Ejecutar Recurrentes</button>
                 <button onclick="openCloneModal()" style="padding:10px; background:white; border:1px solid var(--border); border-radius:8px; font-size:9px; font-weight:700;">Clonar Mes...</button>
-                <button onclick="forceSync()" style="grid-column:span 2; padding:10px; background:white; border:1px solid var(--border); border-radius:8px; font-size:10px; font-weight:700; color:var(--primary);">Sincronizar Nube (Forzado)</button>
+                
+                <button onclick="forceDownload()" style="grid-column:span 1; padding:10px; background:#F1F5F9; border:1px solid var(--border); border-radius:8px; font-size:10px; font-weight:800; color:#334155; display:flex; align-items:center; justify-content:center; gap:5px;">
+                    <i class="fas fa-cloud-download-alt"></i> Descargar Nube
+                </button>
+                <button onclick="forceUpload()" style="grid-column:span 1; padding:10px; background:#0F172A; border:1px solid var(--primary); border-radius:8px; font-size:10px; font-weight:800; color:white; display:flex; align-items:center; justify-content:center; gap:5px;">
+                    <i class="fas fa-cloud-upload-alt"></i> Forzar Subida
+                </button>
                 <button id="btnCloseMonth" onclick="toggleMonthClose()" style="grid-column:span 2; padding:10px; background:#1E293B; border-radius:8px; font-size:9px; font-weight:700; color:white;">Cerrar Mes</button>
                 <button onclick="clearMonth()" style="grid-column:span 2; padding:10px; background:#FEF2F2; border:1px solid #FECACA; border-radius:8px; font-size:9px; font-weight:700; color:#EF4444;">Borrar Todo el Mes</button>
             </div>
@@ -470,7 +476,7 @@
 </div>
 
 <script>
-    // --- URL ACTUALIZADA Y CORRECTA ---
+    // --- URL ---
     const API_URL = "https://script.google.com/macros/s/AKfycbxWA69r-NoWYQExkOyVGzTHWHQ0oo6ROpeBxMapByWgQ8et7EnavdeLscRqX13wZfVi/exec";
     const DEVICE_ID = (() => {
       let v = localStorage.getItem("ff_device_id");
@@ -480,7 +486,7 @@
     
     const MONTHS = ["ENE","FEB","MAR","ABR","MAY","JUN","JUL","AGO","SEP","OCT","NOV","DIC"];
     const PALETTE = ['#3B82F6','#10B981','#F59E0B','#EF4444','#8B5CF6','#64748B','#EC4899','#14B8A6'];
-    const STORAGE_KEY = 'financeFlowData_Javi_Turbo'; // Usamos el mismo Key que la versión PC para compartir
+    const STORAGE_KEY = 'financeFlowData_Javi_Turbo'; 
 
     let data = { 
         txs: [], 
@@ -504,9 +510,9 @@
     const fmt = (n) => n.toLocaleString('es-AR', {minimumFractionDigits: 0, maximumFractionDigits: 0});
     const fmtUsd = (n) => (n/1000).toFixed(1) + 'K';
 
-    // --- LÓGICA DE SINCRONIZACIÓN OPTIMIZADA (LOCAL FIRST + DEBOUNCE) ---
-    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') forceSync(); });
-    window.onload = () => { loadLocal(); updateDateUI(); forceSync(); };
+    // --- LÓGICA DE SINCRONIZACIÓN ---
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') forceDownload(); });
+    window.onload = () => { loadLocal(); updateDateUI(); forceDownload(); };
 
     function updateDateUI() { 
         document.getElementById('monthTxt').innerText = `${MONTHS[currentDate.getMonth()]} ${currentDate.getFullYear()}`; 
@@ -526,8 +532,6 @@
     function loadLocal() {
         const stored = localStorage.getItem(STORAGE_KEY); 
         if(stored) data = JSON.parse(stored);
-        
-        // Defaults seguros
         if(!data.accounts) data.accounts = [];
         if(!data.txs) data.txs = [];
         if(!data.closedMonths) data.closedMonths = {};
@@ -551,7 +555,6 @@
 
         currentTxs = (data.txs || []).filter(t => !t.deletedAt && parseInt(t.date.split('-')[0]) === y && parseInt(t.date.split('-')[1]) === m);
         
-        // Calculo visual de conversión (solo para mostrar)
         currentTxs.forEach(t => {
             if(!t.exec && t.curr && t.curr!=='ARS') {
                 if(t.curr === 'USD') t.amount = t.origAmt * rates.ARS;
@@ -892,69 +895,84 @@
     function nav(v) { document.querySelectorAll('.view-section').forEach(e=>e.classList.remove('active')); document.querySelectorAll('.nav-btn').forEach(e=>e.classList.remove('active')); document.getElementById(`view-${v}`).classList.add('active'); document.getElementById(`nav-${v}`).classList.add('active'); if(v=='networth') renderNetWorth(); if(v=='stats') renderStats(); if(v=='settings') renderSettings(); }
     function setSubTab(t) { document.getElementById('sec-txs').style.display=t=='txs'?'flex':'none'; document.getElementById('sec-alloc').style.display=t=='alloc'?'block':'none'; document.getElementById('tab-txs').className=`tab-btn ${t=='txs'?'active':''}`; document.getElementById('tab-alloc').className=`tab-btn ${t=='alloc'?'active':''}`; }
     
-    // *** NUEVA LÓGICA DE SINCRONIZACIÓN (TURBO + TEXTO PLANO) ***
+    // ==========================================================
+    // NUEVA LÓGICA DE SYNC (TURBO + MANUAL)
+    // ==========================================================
     
-    // 1. Force Sync: Intenta descargar cambios de la nube (GET)
-    async function forceSync() {
-        const syncDot = document.getElementById('syncDot'); 
-        syncDot.className = 'sync-dot saving'; // Azul girando
-        try { 
-            const r = await fetch(API_URL + '?t=' + Date.now()); 
-            const d = await r.json(); 
-            // Si la nube tiene datos más recientes, actualizamos local
-            if(d && d.updatedAt > (data.updatedAt||0)) {
-                data = d; 
+    function setSyncState(s) {
+        const dot = document.getElementById('syncDot');
+        dot.className = `sync-dot ${s}`;
+    }
+
+    // 1. FORZAR BAJADA (DESCARGAR)
+    async function forceDownload() {
+        setSyncState('saving');
+        try {
+            const r = await fetch(API_URL + '?t=' + Date.now());
+            // AHORA ESPERAMOS JSON (Igual que el PC)
+            const cloudData = await r.json(); 
+            
+            // Si la nube es más nueva o forzamos manualmente
+            if(cloudData && cloudData._updatedAtClient > (data._updatedAtClient||0)) {
+                data = cloudData;
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-                refreshAll(); 
+                refreshAll();
+                setSyncState('');
+            } else {
+                setSyncState('');
             }
-            syncDot.className = 'sync-dot'; // Verde (OK)
-        } catch(e){ 
-            console.error("Error Sync:", e); 
-            // Si falla, volvemos a estado pendiente (naranja) si hay cambios locales, o rojo si error grave
-            syncDot.className = 'sync-dot error'; 
-            setTimeout(() => syncDot.className = 'sync-dot pending', 2000);
+        } catch(e) {
+            console.error("Error Download:", e);
+            setSyncState('error');
         }
     }
 
-    // 2. Save Data: Guarda local y agenda subida (Debounce 3s)
-    function saveData() {
-        // Actualizamos timestamp local
-        data.updatedAt = Date.now();
-        data._writer = DEVICE_ID; // Identificar dispositivo
-
-        // Guardado Local Inmediato
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-        refreshAll(); 
-
-        // Feedback visual: Naranja (Pendiente de subir)
-        const syncDot = document.getElementById('syncDot');
-        syncDot.className = 'sync-dot pending'; 
-
-        // Reiniciar timer (Debounce)
-        if(saveTimer) clearTimeout(saveTimer);
+    // 2. FORZAR SUBIDA (UPLOAD)
+    async function forceUpload() {
+        setSyncState('saving');
         
-        saveTimer = setTimeout(() => {
-            syncDot.className = 'sync-dot saving'; // Azul girando
-            
-            fetch(API_URL, {
+        // Actualizamos timestamp para ganar la carrera
+        data._updatedAtClient = Date.now(); 
+        data._writer = DEVICE_ID;
+        
+        // Guardado local
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        
+        try {
+            const r = await fetch(API_URL, {
                 method: 'POST',
-                // TRUCO: Enviamos como string plano para evitar errores CORS complejos
+                // Enviamos JSON Stringify (Igual que el PC)
                 body: JSON.stringify(data) 
-            })
-            .then(res => res.text()) // Esperamos respuesta de texto ("OK")
-            .then(text => {
-                 if(text.includes('OK') || text.includes('success')) {
-                     syncDot.className = 'sync-dot'; // Verde (Éxito)
-                 } else {
-                     console.warn("Respuesta servidor:", text);
-                     syncDot.className = 'sync-dot error';
-                 }
-            })
-            .catch(e => {
-                 console.error("Error al subir:", e);
-                 syncDot.className = 'sync-dot error'; // Rojo
             });
-        }, 3000); // Espera 3 segundos de inactividad
+            const res = await r.json(); // Esperamos respuesta JSON {ok:true}
+            
+            if(res.ok) {
+                setSyncState('');
+                refreshAll();
+            } else {
+                console.warn("Server Error:", res);
+                setSyncState('error');
+            }
+        } catch(e) {
+            console.error("Error Upload:", e);
+            setSyncState('error');
+        }
+    }
+
+    // 3. GUARDADO AUTOMÁTICO (DEBOUNCE)
+    function saveData() {
+        // Guardado local instantáneo
+        data._updatedAtClient = Date.now();
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        refreshAll();
+        
+        // Feedback visual (Pendiente)
+        setSyncState('pending');
+
+        if(saveTimer) clearTimeout(saveTimer);
+        saveTimer = setTimeout(() => {
+            forceUpload();
+        }, 3000);
     }
 </script>
 </body>
