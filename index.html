@@ -23,7 +23,14 @@
             --safe-bottom: env(safe-area-inset-bottom);
         }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
-        body { font-family: 'Manrope', sans-serif; background: var(--bg); margin: 0; color: var(--txt); height: 100vh; overflow: hidden; user-select: none; display: flex; flex-direction: column; }
+        
+        /* FIX SCROLL HORIZONTAL */
+        body { 
+            font-family: 'Manrope', sans-serif; 
+            background: var(--bg); margin: 0; color: var(--txt); 
+            height: 100vh; width: 100vw; overflow: hidden; 
+            user-select: none; display: flex; flex-direction: column; 
+        }
 
         /* HEADER */
         .header { 
@@ -34,20 +41,19 @@
         }
         .brand { font-weight: 800; font-size: 13px; letter-spacing: -0.3px; display:flex; gap:6px; align-items:center; color: var(--primary); white-space: nowrap; }
         
-        /* SYNC DOT STATES */
+        /* SYNC DOT */
         .sync-dot { width:10px; height:10px; border-radius:50%; background:#10B981; transition:0.3s; box-shadow: 0 0 0 2px white; cursor: pointer; }
         .sync-dot.pending { background: #F59E0B; }
         .sync-dot.saving { background: transparent; border: 2px solid #3B82F6; border-top: 2px solid transparent; animation: spin 1s linear infinite; }
         .sync-dot.error { background: #EF4444; }
-        
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
         .date-pill { background: rgba(0,0,0,0.03); border-radius: 99px; padding: 4px 10px; display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 12px; border: 1px solid rgba(0,0,0,0.05); }
         .btn-arrow { background: none; border: none; font-size: 12px; color: var(--txt); cursor: pointer; padding: 4px; opacity: 0.6; }
 
         /* LAYOUT */
-        .main-container { flex: 1; position: relative; overflow: hidden; display: flex; flex-direction: column; }
-        .view-section { display: none; height: 100%; flex-direction: column; } 
+        .main-container { flex: 1; position: relative; overflow: hidden; display: flex; flex-direction: column; width: 100%; }
+        .view-section { display: none; height: 100%; flex-direction: column; width: 100%; } 
         .view-section.active { display: flex; animation: fadeIn 0.2s ease; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
@@ -64,15 +70,14 @@
         .stat-lbl { font-size: 8px; opacity: 0.6; font-weight: 600; }
         .stat-val { font-size: 11px; font-weight: 700; }
 
-        /* TABS */
         .tabs-pill { display: flex; background: #E2E8F0; padding: 2px; border-radius: 8px; flex-shrink: 0; }
         .tab-btn { flex: 1; text-align: center; padding: 6px; border-radius: 6px; font-size: 10px; font-weight: 700; color: var(--txt-sec); cursor: pointer; transition: 0.2s; }
         .tab-btn.active { background: white; color: var(--primary); box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
 
-        /* LISTAS */
-        .grid-lists { display: flex; gap: 8px; flex: 1; min-height: 0; width: 100%; overflow: hidden; }
-        .list-col { flex: 1; background: var(--surface); border-radius: 10px; border: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
-        .col-head { padding: 6px; text-align: center; font-size: 9px; font-weight: 800; color: white; text-transform: uppercase; letter-spacing: 0.5px; flex-shrink: 0; display: flex; justify-content: space-between; align-items: center; }
+        /* LISTAS & T-ACCOUNTS COMPACTAS */
+        .grid-lists { display: flex; gap: 4px; flex: 1; min-height: 0; width: 100%; overflow: hidden; }
+        .list-col { flex: 1; background: var(--surface); border-radius: 8px; border: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+        .col-head { padding: 5px; text-align: center; font-size: 9px; font-weight: 800; color: white; text-transform: uppercase; letter-spacing: 0.5px; flex-shrink: 0; display: flex; justify-content: space-between; align-items: center; }
         .bg-inc { background: var(--inc); justify-content: center; } 
         .bg-exp { background: var(--exp); }
         .list-scroll { flex: 1; overflow-y: auto; padding: 0; -webkit-overflow-scrolling: touch; }
@@ -81,22 +86,37 @@
         .search-inp { width:100%; border:none; padding:6px; font-size:9px; background:transparent; }
         .btn-clear { background:none; border:none; font-size:10px; color:#EF4444; cursor:pointer; padding:0 5px; }
 
-        /* TARJETA MOVIMIENTO */
-        .tx-card { background: white; padding: 8px 10px; border-bottom: 1px solid #F1F5F9; cursor: pointer; }
-        .tx-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px; }
-        .tx-desc { font-weight: 700; font-size: 11px; color: var(--txt); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100px; letter-spacing: -0.2px; }
-        .tx-amt { font-weight: 800; font-size: 11px; }
-        .tx-sub { display: flex; justify-content: space-between; font-size: 9px; color: var(--txt-sec); align-items: center; margin-top: 1px; }
+        /* TARJETA MOVIMIENTO - OPTIMIZACION DE ESPACIO */
+        .tx-card { background: white; padding: 5px 8px; border-bottom: 1px solid #F1F5F9; cursor: pointer; }
+        .tx-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0; }
+        .tx-desc { font-weight: 700; font-size: 10px; color: var(--txt); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 95px; letter-spacing: -0.2px; }
+        .tx-amt { font-weight: 800; font-size: 10px; }
+        .tx-sub { display: flex; justify-content: space-between; font-size: 9px; color: var(--txt-sec); align-items: center; margin-top: 0; }
         
-        .cat-tag { background: #F1F5F9; padding: 1px 5px; border-radius: 4px; font-size: 8px; font-weight: 700; color: var(--txt-sec); text-transform: uppercase; letter-spacing: 0.5px; }
-        
-        .magic-q { font-size: 9px; font-weight: 700; margin-left: 4px; }
+        .cat-tag { background: #F1F5F9; padding: 0px 4px; border-radius: 3px; font-size: 8px; font-weight: 700; color: var(--txt-sec); text-transform: uppercase; letter-spacing: 0px; }
+        .magic-q { font-size: 8px; font-weight: 700; margin-left: 4px; }
         .q-ok { color: var(--inc); } .q-bad { color: var(--exp); }
 
         .executed { opacity: 0.5; }
         .executed .tx-desc, .executed .tx-amt { text-decoration: line-through; color: var(--txt-sec) !important; }
 
-        /* NETWORTH / ACCOUNTS */
+        /* ALLOCATION */
+        .alloc-container { flex: 1; overflow-y: auto; padding-bottom: 20px; }
+        .alloc-card { background: white; border-radius: 10px; border: 1px solid var(--border); margin-bottom: 6px; overflow: hidden; }
+        .alloc-head { padding: 8px 10px; display: flex; justify-content: space-between; align-items: center; background: white; border-bottom: 1px solid #f1f5f9; cursor: pointer; }
+        .alloc-prog { height: 4px; width: 100%; background: #E2E8F0; }
+        .alloc-fill { height: 100%; background: var(--inc); }
+        .alloc-children { background: #F8FAFC; display: none; border-top: 1px solid var(--border); }
+        .child-row { padding: 6px 10px; display: flex; justify-content: space-between; font-size: 10px; color: var(--txt); border-bottom: 1px solid rgba(0,0,0,0.03); cursor: pointer; } 
+        .child-row:active { background: #F1F5F9; }
+        .child-row.executed span { text-decoration: line-through; opacity: 0.6; }
+        
+        .alloc-tools { display: flex; gap:8px; margin-bottom:8px; }
+        .btn-alloc { flex:1; padding:8px; border-radius:8px; font-size:10px; font-weight:700; border:none; display:flex; align-items:center; justify-content:center; gap:6px; cursor:pointer; }
+        .btn-auto { background: linear-gradient(135deg, #3B82F6, #2563EB); color: white; box-shadow: 0 2px 5px rgba(37, 99, 235, 0.3); }
+        .btn-reset { background: white; border: 1px solid var(--border); color: #EF4444; }
+
+        /* NETWORTH & CHARTS */
         .nw-card { background:white; border-radius:12px; padding:10px; border:1px solid var(--border); margin-bottom:8px; display:flex; align-items:center; justify-content:space-between; box-shadow:0 1px 2px rgba(0,0,0,0.02); }
         .nw-icon { width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:14px; margin-right:10px; flex-shrink:0; }
         .nw-green { background:#D1FAE5; color:#059669; }
@@ -108,28 +128,10 @@
         .nw-amt { font-weight:800; font-size:11px; color:var(--txt); }
         .nw-native { font-size:9px; color:var(--txt-sec); }
 
-        /* ALLOCATION */
-        .alloc-container { flex: 1; overflow-y: auto; padding-bottom: 20px; }
-        .alloc-card { background: white; border-radius: 10px; border: 1px solid var(--border); margin-bottom: 8px; overflow: hidden; }
-        .alloc-head { padding: 10px; display: flex; justify-content: space-between; align-items: center; background: white; border-bottom: 1px solid #f1f5f9; cursor: pointer; }
-        .alloc-prog { height: 4px; width: 100%; background: #E2E8F0; }
-        .alloc-fill { height: 100%; background: var(--inc); }
-        .alloc-children { background: #F8FAFC; display: none; border-top: 1px solid var(--border); }
-        .child-row { padding: 8px 10px; display: flex; justify-content: space-between; font-size: 11px; color: var(--txt); border-bottom: 1px solid rgba(0,0,0,0.03); cursor: pointer; } 
-        .child-row:active { background: #F1F5F9; }
-        .child-row.executed span { text-decoration: line-through; opacity: 0.6; }
-        
-        .alloc-tools { display: flex; gap:8px; margin-bottom:10px; }
-        .btn-alloc { flex:1; padding:10px; border-radius:8px; font-size:10px; font-weight:700; border:none; display:flex; align-items:center; justify-content:center; gap:6px; cursor:pointer; }
-        .btn-auto { background: linear-gradient(135deg, #3B82F6, #2563EB); color: white; box-shadow: 0 2px 5px rgba(37, 99, 235, 0.3); }
-        .btn-reset { background: white; border: 1px solid var(--border); color: #EF4444; }
-
-        /* CHARTS */
         .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 10px; }
         .chart-card { background: white; border: 1px solid var(--border); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; }
         .chart-header { font-size: 11px; font-weight: 800; text-transform: uppercase; color: var(--txt-sec); margin-bottom: 8px; display: flex; justify-content: space-between; }
         .chart-body { display: flex; align-items: center; gap: 10px; height: 160px; }
-        .chart-line-body { height: 160px; width: 100%; position: relative; }
         .donut-container { width: 120px; height: 120px; flex-shrink: 0; position: relative; }
         .legend-container { flex: 1; height: 100%; overflow-y: auto; padding-right: 2px; }
         .legend-item { display: flex; align-items: center; justify-content: space-between; font-size: 9px; padding: 5px 0; border-bottom: 1px dashed #F1F5F9; cursor: pointer; }
@@ -137,13 +139,13 @@
         .legend-name { color: var(--txt); font-weight: 600; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
         /* NAV & SHEET */
-        .bottom-nav { height: 60px; background: var(--glass); border-top: 1px solid rgba(0,0,0,0.05); display: flex; justify-content: space-around; align-items: center; flex-shrink: 0; padding-bottom: var(--safe-bottom); }
+        .bottom-nav { height: 60px; background: var(--glass); border-top: 1px solid rgba(0,0,0,0.05); display: flex; justify-content: space-around; align-items: center; flex-shrink: 0; padding-bottom: var(--safe-bottom); width: 100%; }
         .nav-btn { font-size: 18px; color: #CBD5E1; background: none; border: none; padding: 6px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
         .nav-btn span { font-size: 9px; font-weight: 700; }
         .nav-btn.active { color: var(--primary); }
         .fab { width: 48px; height: 48px; background: var(--primary); border-radius: 16px; color: white; display: flex; align-items: center; justify-content: center; font-size: 20px; transform: translateY(-15px); border: 4px solid var(--bg); box-shadow: 0 6px 15px rgba(15,23,42,0.3); }
 
-        .sheet, .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; opacity: 0; pointer-events: none; transition: 0.2s; display: flex; align-items: flex-end; backdrop-filter: blur(2px); }
+        .sheet, .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; opacity: 0; pointer-events: none; transition: 0.2s; display: flex; align-items: flex-end; backdrop-filter: blur(2px); width: 100vw; }
         .sheet.open, .modal-overlay.open { opacity: 1; pointer-events: auto; }
         .sheet-box { background: var(--surface); width: 100%; border-radius: 16px 16px 0 0; padding: 20px; max-height: 90vh; overflow-y: auto; transform: translateY(100%); transition: 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); padding-bottom: calc(20px + var(--safe-bottom)); }
         .sheet.open .sheet-box { transform: translateY(0); }
@@ -173,9 +175,7 @@
         .tree-body { padding: 6px; display: none; flex-wrap: wrap; gap: 4px; border-top: 1px solid var(--border); }
         .concept-tag { font-size: 9px; padding: 2px 6px; background: #F1F5F9; border-radius: 4px; border: 1px solid transparent; display: flex; align-items: center; gap: 3px; }
 
-        /* LOADER DE SEGURIDAD */
         .loader { position:fixed; inset:0; background:rgba(255,255,255,0.95); z-index:9999; display:flex; flex-direction:column; align-items:center; justify-content:center; backdrop-filter:blur(5px); transition: opacity 0.3s; }
-        
         .lock-badge { font-size:10px; color:#EF4444; margin-right:5px; animation: pulse 2s infinite; }
         @keyframes pulse { 0% { opacity:0.5; } 50% { opacity:1; } 100% { opacity:0.5; } }
     </style>
@@ -499,7 +499,7 @@
     // --- VARIABLES DE SINCRONIZACIÓN ---
     let __syncTimer = null;
     let __isSyncing = false;
-    let __dataReady = false; // CANDADO DE SEGURIDAD
+    let __dataReady = false; 
 
     const fmt = (n) => n.toLocaleString('es-AR', {minimumFractionDigits: 0, maximumFractionDigits: 0});
     const fmtUsd = (n) => (n/1000).toFixed(1) + 'K';
@@ -509,7 +509,6 @@
     window.onload = () => { 
         loadLocal(); 
         updateDateUI(); 
-        // Lanza la verificación segura al inicio
         initialLoad(); 
     };
 
@@ -543,7 +542,7 @@
         if(!data.monthlyRates) data.monthlyRates = {};
     }
 
-    // --- TASAS INTELIGENTES (COPIADO DEL PC) ---
+    // --- TASAS INTELIGENTES ---
     function getSmartRates(currentKey) {
         if (data.monthlyRates && data.monthlyRates[currentKey]) {
             return data.monthlyRates[currentKey];
@@ -611,23 +610,18 @@
         currentTxs.forEach(t => { if(t.type === 'inc') runningBal += t.amount; else if(t.type === 'exp') runningBal -= t.amount; balMap[t.id] = runningBal; });
 
         currentTxs.forEach(t => {
-            // AQUÍ OCULTAMOS LAS TRANSFERENCIAS SI EL USUARIO NO LAS QUIERE VER EN LISTA, O LAS DEJAMOS
-            // COMO PEDISTE NO USAR "TRANSF", LAS ASUMO COMO MOVIMIENTO INTERNO O GASTO.
             if(t.type === 'transfer') return;
 
             const isInc = t.type === 'inc';
             const el = document.createElement('div'); el.className = `tx-card ${t.exec ? 'executed' : ''}`; el.onclick = () => edit(t.id);
             let extraInfo = (t.curr && t.curr!=='ARS') ? `<span style="color:var(--accent); font-weight:800; margin-left:4px;">${t.origAmt} ${t.curr}</span>` : '';
             
-            // YA NO MOSTRAMOS ORIGEN, SINO CATEGORÍA AQUI
-            // let accName = ''; if(t.fromAccountId) ... (ELIMINADO)
+            // AQUI MOSTRAMOS LA CATEGORIA EN LUGAR DE LA CUENTA
+            let catDisplay = `<span class="cat-tag">${t.cat}</span>`;
             
             // Badge de SPLIT
             let splitBadge = (t.children && t.children.length) ? `<span class="cat-tag" style="background:#e0e7ff; color:#4338ca;">DIVIDIDO</span>` : '';
             
-            // Badge de Categoría Principal
-            const catDisplay = `<span class="cat-tag">${t.cat}</span>`;
-
             let qMagic = '';
             if(!isInc) { const currentGlobalBal = balMap[t.id]; qMagic = `<span class="magic-q ${currentGlobalBal>=0?'q-ok':'q-bad'}">Sub: $${fmt(currentGlobalBal)}</span>`; }
 
@@ -751,18 +745,14 @@
         setType('exp'); tempCat=''; tempLink=''; renderLinkChips();
     }
     
-    // ELIMINADA FUNCION updateAccountSelects()
-
     function setType(t) {
         document.getElementById('fType').value = t; 
         document.getElementById('seg-exp').className = `tab-btn ${t=='exp'?'active':''}`; 
         document.getElementById('seg-inc').className = `tab-btn ${t=='inc'?'active':''}`; 
-        // Eliminado seg-trf
         
         document.getElementById('div-cat').style.display = 'block'; 
         document.getElementById('div-desc').style.display = 'block'; 
         document.getElementById('linkSection').style.display = t=='exp'?'block':'none';
-        // Eliminados div-from y div-to
         
         renderCatChips(t);
     }
@@ -817,8 +807,8 @@
             desc: desc, 
             exec: document.getElementById('fExec').checked, 
             linkId: document.getElementById('fLink').value || null, 
-            fromAccountId: null, // ELIMINADO ORIGEN
-            toAccountId: null, // ELIMINADO DESTINO
+            fromAccountId: null, 
+            toAccountId: null, 
             children: editingSplitChildren || [] 
         };
         if(editId) { const i=data.txs.findIndex(x=>x.id==editId); if(i>-1) data.txs[i]=tx; } else data.txs.push(tx);
@@ -850,7 +840,6 @@
             if(!data.concepts[t.cat]?.includes(t.desc)){ document.getElementById('fConcept').value='new'; document.getElementById('fCustomDesc').style.display='block'; document.getElementById('fCustomDesc').value=t.desc; } 
             tempLink=t.linkId||''; document.getElementById('fLink').value=tempLink; renderLinkChips(); 
         } 
-        // NO SETEAMOS FROM/TO ACCOUNT ID
         openSheet();
     }
     function delTx(){ if(confirm('Eliminar?')){ data.txs.find(x=>x.id==editId).deletedAt=Date.now(); saveData(); closeSheet(); }}
@@ -866,21 +855,55 @@
         unassignedExps.forEach(exp => { const validIncome = incomes.find(inc => inc.date <= exp.date && inc.balance >= exp.amount); if(validIncome) { exp.linkId = validIncome.id; validIncome.balance -= exp.amount; count++; } });
         if(count > 0) { alert(`Asignados: ${count}`); saveData(); } else alert("Sin coincidencias");
     }
+
+    // --- NUEVA LÓGICA DE ASIGNACIÓN PARA SOPORTAR SPLITS ---
     function renderAlloc() {
         const c = document.getElementById('alloc-list'); c.innerHTML=''; const term = document.getElementById('allocSearch').value.toLowerCase();
         const incs = currentTxs.filter(t=>t.type=='inc'), exps = currentTxs.filter(t=>t.type=='exp');
+        
         incs.forEach(inc => {
-            const subs = exps.filter(e => e.linkId == inc.id), spent = subs.reduce((a,b)=>a+b.amount,0), remaining = inc.amount - spent;
+            let subs = [];
+            
+            exps.forEach(e => {
+                // Caso 1: El padre es un split y está vinculado (se suma todo)
+                if(e.linkId == inc.id) {
+                    subs.push(e);
+                } 
+                // Caso 2: El padre es un split, no está vinculado, pero sus hijos sí
+                else if (e.children && e.children.length > 0) {
+                     e.children.forEach(child => {
+                         if(child.linkId == inc.id) {
+                             // Creamos un objeto visual para el hijo
+                             subs.push({ ...child, id: e.id, date: e.date, isChild:true, parentDesc: e.desc });
+                         }
+                     });
+                }
+            });
+
+            const spent = subs.reduce((a,b)=>a+b.amount,0), remaining = inc.amount - spent;
             const pctLeft = Math.max(0, 100 - (inc.amount > 0 ? (spent/inc.amount)*100 : 0));
             const filteredSubs = term ? subs.filter(s => s.desc.toLowerCase().includes(term)) : subs;
+            
             if(term && filteredSubs.length === 0 && !inc.desc.toLowerCase().includes(term)) return;
+            
             const card = document.createElement('div'); card.className='alloc-card';
-            let childHTML = ''; (term ? filteredSubs : subs).forEach(s => { childHTML += `<div class="child-row ${s.exec?'executed':''}" onclick="edit('${s.id}')"><span>${s.desc} <span style="font-size:8px; color:var(--txt-sec);">d-${s.date.split('-')[2]}</span></span><span>$${fmt(s.amount)}</span></div>`; });
+            let childHTML = ''; 
+            (term ? filteredSubs : subs).forEach(s => { 
+                let descText = s.isChild ? `↳ ${s.desc} <span style='font-size:8px; opacity:0.7'>(${s.parentDesc})</span>` : s.desc;
+                childHTML += `<div class="child-row ${s.exec?'executed':''}" onclick="edit('${s.id}')"><span>${descText} <span style="font-size:8px; color:var(--txt-sec);">d-${s.date.split('-')[2]}</span></span><span>$${fmt(s.amount)}</span></div>`; 
+            });
+            
             if(!subs.length) childHTML = '<div class="child-row" style="font-style:italic; color:#cbd5e1; cursor:default;">Sin gastos</div>';
             card.innerHTML = `<div class="alloc-head"><div onclick="this.closest('.alloc-card').querySelector('.alloc-children').style.display = this.closest('.alloc-card').querySelector('.alloc-children').style.display=='block'?'none':'block'" style="flex:1;"><div style="font-weight:700; font-size:11px;">${inc.desc}</div><div style="font-size:9px; color:var(--txt-sec);">Ingreso: $${fmt(inc.amount)}</div></div><div style="display:flex; align-items:center; gap:10px;"><div style="text-align:right;"><div style="font-weight:800; font-size:11px; color:${remaining>=0?'var(--inc)':'var(--exp)'}">$${fmt(remaining)}</div><div style="font-size:9px; color:var(--txt-sec);">Disponible</div></div><i class="fas fa-unlink" style="color:#cbd5e1; font-size:10px; padding:4px;" onclick="unassignGroup('${inc.id}')"></i></div></div><div class="alloc-prog"><div class="alloc-fill" style="width:${pctLeft}%; background:${remaining>=0?'var(--inc)':'var(--exp)'}"></div></div><div class="alloc-children" style="display:${term?'block':'none'}">${childHTML}</div>`;
             c.appendChild(card);
         });
-        const orphans = exps.filter(e => !e.linkId), orphansFiltered = term ? orphans.filter(e => e.desc.toLowerCase().includes(term)) : orphans;
+        
+        // Manejo de Huérfanos (Sin asignar)
+        // Simplificado: Solo mostramos padres sin asignar. Si un padre tiene hijos asignados parcialmente, el resto es difícil de calcular aquí sin mucha lógica extra.
+        // Asumimos modelo simple: Link en Padre.
+        const orphans = exps.filter(e => !e.linkId && (!e.children || !e.children.some(c => c.linkId))); 
+        const orphansFiltered = term ? orphans.filter(e => e.desc.toLowerCase().includes(term)) : orphans;
+        
         if(orphans.length > 0 && (!term || orphansFiltered.length > 0)) {
              let orphanHTML = ''; orphansFiltered.forEach(s => { orphanHTML += `<div class="child-row ${s.exec?'executed':''}" onclick="edit('${s.id}')"><span>${s.desc}</span><span>$${fmt(s.amount)}</span></div>`; });
              c.innerHTML += `<div class="alloc-card" style="border-left:4px solid var(--exp);"><div class="alloc-head" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display=='block'?'none':'block'"><div style="display:flex; justify-content:space-between; font-size:11px; font-weight:700; width:100%;"><span>Sin Asignar (${orphansFiltered.length})</span><span style="color:var(--exp);">$${fmt(orphans.reduce((a,b)=>a+b.amount,0))}</span></div></div><div class="alloc-children" style="display:none; border-top:1px solid #f1f5f9;">${orphanHTML}</div></div>`;
