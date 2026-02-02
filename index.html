@@ -36,9 +36,9 @@
         
         /* SYNC DOT STATES */
         .sync-dot { width:10px; height:10px; border-radius:50%; background:#10B981; transition:0.3s; box-shadow: 0 0 0 2px white; cursor: pointer; }
-        .sync-dot.pending { background: #F59E0B; } /* Naranja: Cambios locales */
-        .sync-dot.saving { background: transparent; border: 2px solid #3B82F6; border-top: 2px solid transparent; animation: spin 1s linear infinite; } /* Azul Girando: Subiendo */
-        .sync-dot.error { background: #EF4444; } /* Rojo: Error */
+        .sync-dot.pending { background: #F59E0B; }
+        .sync-dot.saving { background: transparent; border: 2px solid #3B82F6; border-top: 2px solid transparent; animation: spin 1s linear infinite; }
+        .sync-dot.error { background: #EF4444; }
         
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
@@ -175,7 +175,7 @@
         .tree-body { padding: 6px; display: none; flex-wrap: wrap; gap: 4px; border-top: 1px solid var(--border); }
         .concept-tag { font-size: 9px; padding: 2px 6px; background: #F1F5F9; border-radius: 4px; border: 1px solid transparent; display: flex; align-items: center; gap: 3px; }
 
-        /* LOADER DE BLOQUEO */
+        /* LOADER DE SEGURIDAD */
         .loader { position:fixed; inset:0; background:rgba(255,255,255,0.95); z-index:9999; display:flex; flex-direction:column; align-items:center; justify-content:center; backdrop-filter:blur(5px); transition: opacity 0.3s; }
         
         .lock-badge { font-size:10px; color:#EF4444; margin-right:5px; animation: pulse 2s infinite; }
@@ -860,13 +860,18 @@
         if(drillCat) { document.getElementById(resetBtnId).style.display = 'block'; document.getElementById(titleId).innerText = drillCat; txs = txs.filter(t => t.cat === drillCat); key = 'desc'; } else { document.getElementById(resetBtnId).style.display = 'none'; document.getElementById(titleId).innerText = defaultTitle; }
         renderDoughnut(document.getElementById(canvasId), document.getElementById(legendId), txs, key, type);
     }
+    
+    // CORRECCIÓN MATEMÁTICA AQUÍ
     function renderDoughnut(cvs, leg, txs, key, type) {
         let map={}; txs.forEach(t=>{ const k=t[key]||'Gral'; map[k]=(map[k]||0)+t.amount; });
-        const ent = Object.entries(map).sort((a,b)=>b[1]-a[1]); const tot = ent.reduce((a,b)=>a+b.amount,0);
+        const ent = Object.entries(map).sort((a,b)=>b[1]-a[1]); 
+        
+        // CORRECCIÓN: Antes era b.amount, ahora es curr[1] (el valor acumulado)
+        const tot = ent.reduce((acc, curr) => acc + curr[1], 0);
+
         const chartInstance = Chart.getChart(cvs); if(chartInstance) chartInstance.destroy();
         new Chart(cvs, { type: 'doughnut', data: { labels: ent.map(e=>e[0]), datasets: [{ data: ent.map(e=>e[1]), backgroundColor: PALETTE, borderWidth:0 }] }, options: { responsive:true, maintainAspectRatio:false, cutout:'70%', animation: { duration: 0 }, plugins:{legend:{display:false}}, onClick:(e,el)=>{ if(el.length > 0) { const idx = el[0].index; const selected = ent[idx][0]; if(type === 'exp' && !drillCatExp) { drillCatExp = selected; renderStats(); } if(type === 'inc' && !drillCatInc) { drillCatInc = selected; renderStats(); } } } } });
         leg.innerHTML = ''; ent.forEach((e,i) => { 
-            // FIX NAN: Calcular porcentaje seguro
             const pct = tot > 0 ? Math.round((e[1]/tot)*100) : 0;
             leg.innerHTML += `<div class="legend-item" onclick="if('${type}'=='exp' && !drillCatExp){drillCatExp='${e[0]}';renderStats();} if('${type}'=='inc' && !drillCatInc){drillCatInc='${e[0]}';renderStats();}"><div style="display:flex; align-items:center; flex:1; min-width:0;"><div class="legend-dot" style="background:${PALETTE[i%PALETTE.length]}"></div><div class="legend-name">${e[0]}</div></div><div style="display:flex; align-items:center; gap:6px;"><span style="font-size:8px; color:var(--txt-sec);">${pct}%</span><span style="font-weight:700; font-size:10px; color:var(--txt);">$${fmt(e[1])}</span></div></div>`; 
         });
@@ -1003,8 +1008,8 @@
         }
     }
 
+    // CORRECCIÓN CLAVE PARA MÓVIL (Content-Type + Redirect)
     async function forceUpload() {
-        // Actualizamos timestamps
         data._updatedAtClient = Date.now(); 
         data.updatedAt = Date.now(); 
         data._writer = DEVICE_ID;
@@ -1014,12 +1019,17 @@
         try {
             const r = await fetch(API_URL, {
                 method: 'POST',
+                redirect: 'follow', // Para que el móvil siga la redirección de Google
+                headers: {
+                    "Content-Type": "text/plain;charset=utf-8" // Para que no falle por CORS
+                },
                 body: JSON.stringify(data) 
             });
             const res = await r.json(); 
             if(res.ok) setSyncState('');
             else setSyncState('error');
         } catch(e) {
+            console.error(e);
             setSyncState('error');
         }
     }
