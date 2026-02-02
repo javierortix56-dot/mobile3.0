@@ -175,7 +175,8 @@
         .tree-body { padding: 6px; display: none; flex-wrap: wrap; gap: 4px; border-top: 1px solid var(--border); }
         .concept-tag { font-size: 9px; padding: 2px 6px; background: #F1F5F9; border-radius: 4px; border: 1px solid transparent; display: flex; align-items: center; gap: 3px; }
 
-        .loader { position:fixed; inset:0; background:rgba(255,255,255,0.8); z-index:200; display:none; align-items:center; justify-content:center; }
+        /* LOADER DE BLOQUEO */
+        .loader { position:fixed; inset:0; background:rgba(255,255,255,0.95); z-index:9999; display:flex; flex-direction:column; align-items:center; justify-content:center; backdrop-filter:blur(5px); transition: opacity 0.3s; }
         
         .lock-badge { font-size:10px; color:#EF4444; margin-right:5px; animation: pulse 2s infinite; }
         @keyframes pulse { 0% { opacity:0.5; } 50% { opacity:1; } 100% { opacity:0.5; } }
@@ -183,13 +184,17 @@
 </head>
 <body>
 
-<div id="loader" class="loader"><i class="fas fa-circle-notch fa-spin fa-2x" style="color:var(--primary)"></i></div>
+<div id="loader" class="loader">
+    <i class="fas fa-circle-notch fa-spin fa-2x" style="color:var(--primary); margin-bottom:10px;"></i>
+    <div style="font-weight:700; font-size:12px; color:var(--primary);">Sincronizando...</div>
+    <div style="font-size:10px; color:var(--txt-sec);">Verificando versiones</div>
+</div>
 
 <div class="header">
     <div class="brand">
         <i class="fas fa-lock lock-badge" id="lockIcon" style="display:none;"></i>
         Finanzas J&M Pro 
-        <div id="syncDot" class="sync-dot" onclick="forceDownload()" title="Estado Sync"></div>
+        <div id="syncDot" class="sync-dot" onclick="scheduleCloudSync()" title="Estado Sync"></div>
     </div>
     <div class="date-pill" onclick="changeMonth(0)"> 
         <button class="btn-arrow" onclick="event.stopPropagation(); changeMonth(-1)"><i class="fas fa-chevron-left"></i></button>
@@ -324,13 +329,10 @@
                 <button onclick="executeRecurrentes()" style="padding:10px; background:white; border:1px solid var(--border); border-radius:8px; font-size:9px; font-weight:700;">Ejecutar Recurrentes</button>
                 <button onclick="openCloneModal()" style="padding:10px; background:white; border:1px solid var(--border); border-radius:8px; font-size:9px; font-weight:700;">Clonar Mes...</button>
                 
-                <button onclick="forceDownload()" style="grid-column:span 1; padding:10px; background:#F1F5F9; border:1px solid var(--border); border-radius:8px; font-size:10px; font-weight:800; color:#334155; display:flex; align-items:center; justify-content:center; gap:5px;">
-                    <i class="fas fa-cloud-download-alt"></i> Descargar Nube
+                <button onclick="scheduleCloudSync()" style="grid-column:span 1; padding:10px; background:#F1F5F9; border:1px solid var(--border); border-radius:8px; font-size:10px; font-weight:800; color:#334155; display:flex; align-items:center; justify-content:center; gap:5px;">
+                    <i class="fas fa-sync"></i> Sincronizar
                 </button>
-                <button onclick="forceUpload()" style="grid-column:span 1; padding:10px; background:#0F172A; border:1px solid var(--primary); border-radius:8px; font-size:10px; font-weight:800; color:white; display:flex; align-items:center; justify-content:center; gap:5px;">
-                    <i class="fas fa-cloud-upload-alt"></i> Forzar Subida
-                </button>
-                <button id="btnCloseMonth" onclick="toggleMonthClose()" style="grid-column:span 2; padding:10px; background:#1E293B; border-radius:8px; font-size:9px; font-weight:700; color:white;">Cerrar Mes</button>
+                <button id="btnCloseMonth" onclick="toggleMonthClose()" style="grid-column:span 1; padding:10px; background:#1E293B; border-radius:8px; font-size:9px; font-weight:700; color:white;">Cerrar Mes</button>
                 <button onclick="clearMonth()" style="grid-column:span 2; padding:10px; background:#FEF2F2; border:1px solid #FECACA; border-radius:8px; font-size:9px; font-weight:700; color:#EF4444;">Borrar Todo el Mes</button>
             </div>
         </div>
@@ -497,22 +499,32 @@
         recurrentes: [], 
         monthlyRates: {},
         closedMonths: {},
-        updatedAt: 0 
+        updatedAt: 0,
+        _updatedAtClient: 0
     };
     
     let currentTxs = [], editId = null, editAccId = null;
     let drillCatExp = null, drillCatInc = null;
     let tempCat='', tempLink='';
     let currentDate = new Date(); currentDate.setDate(1);
-    let saveTimer = null;
     let editingSplitChildren = null; 
+
+    // --- VARIABLES DE SINCRONIZACIÓN ---
+    let __syncTimer = null;
+    let __isSyncing = false;
+    let __dataReady = false; // CANDADO DE SEGURIDAD
 
     const fmt = (n) => n.toLocaleString('es-AR', {minimumFractionDigits: 0, maximumFractionDigits: 0});
     const fmtUsd = (n) => (n/1000).toFixed(1) + 'K';
 
-    // --- LÓGICA DE SINCRONIZACIÓN ---
-    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') forceDownload(); });
-    window.onload = () => { loadLocal(); updateDateUI(); forceDownload(); };
+    // --- INIT ---
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') scheduleCloudSync(); });
+    window.onload = () => { 
+        loadLocal(); 
+        updateDateUI(); 
+        // Lanza la verificación segura al inicio
+        initialLoad(); 
+    };
 
     function updateDateUI() { 
         document.getElementById('monthTxt').innerText = `${MONTHS[currentDate.getMonth()]} ${currentDate.getFullYear()}`; 
@@ -532,26 +544,48 @@
     function loadLocal() {
         const stored = localStorage.getItem(STORAGE_KEY); 
         if(stored) data = JSON.parse(stored);
+        sanitizeData();
+    }
+
+    function sanitizeData() {
         if(!data.accounts) data.accounts = [];
         if(!data.txs) data.txs = [];
         if(!data.closedMonths) data.closedMonths = {};
         if(!data.accountCats || !data.accountCats.length) data.accountCats = ['Efectivo', 'Banco', 'Inversiones', 'Cripto', 'Tarjeta', 'Otro'];
         if(!data.recurrentes) data.recurrentes = [];
+        if(!data.monthlyRates) data.monthlyRates = {};
+    }
+
+    // --- TASAS INTELIGENTES (COPIADO DEL PC) ---
+    function getSmartRates(currentKey) {
+        if (data.monthlyRates && data.monthlyRates[currentKey]) {
+            return data.monthlyRates[currentKey];
+        }
+        if (data.monthlyRates) {
+            const keys = Object.keys(data.monthlyRates).sort(); 
+            if (keys.length > 0) {
+                const lastKey = keys[keys.length - 1];
+                return data.monthlyRates[lastKey];
+            }
+        }
+        return { ARS: 1200, COP: 3700 };
     }
 
     function refreshAll() {
         const y = currentDate.getFullYear(), m = currentDate.getMonth() + 1;
         const key = getKey();
-        let rates = (data.monthlyRates && data.monthlyRates[key]) ? data.monthlyRates[key] : { ARS: 1200, COP: 3700 };
+        
+        let rates = getSmartRates(key);
         document.getElementById('rateArs').value = rates.ARS; 
         document.getElementById('rateCop').value = rates.COP;
 
         const closed = isMonthClosed();
         document.getElementById('lockIcon').style.display = closed ? 'inline-block' : 'none';
-        document.getElementById('btnCloseMonth').innerText = closed ? 'Reabrir Mes' : 'Cerrar Mes';
-        document.getElementById('btnCloseMonth').style.background = closed ? '#FFFFFF' : '#1E293B';
-        document.getElementById('btnCloseMonth').style.color = closed ? '#0F172A' : '#FFFFFF';
-        document.getElementById('btnCloseMonth').style.border = closed ? '1px solid #CBD5E1' : 'none';
+        const btnClose = document.getElementById('btnCloseMonth');
+        btnClose.innerText = closed ? 'Reabrir Mes' : 'Cerrar Mes';
+        btnClose.style.background = closed ? '#FFFFFF' : '#1E293B';
+        btnClose.style.color = closed ? '#0F172A' : '#FFFFFF';
+        btnClose.style.border = closed ? '1px solid #CBD5E1' : 'none';
 
         currentTxs = (data.txs || []).filter(t => !t.deletedAt && parseInt(t.date.split('-')[0]) === y && parseInt(t.date.split('-')[1]) === m);
         
@@ -831,7 +865,11 @@
         const ent = Object.entries(map).sort((a,b)=>b[1]-a[1]); const tot = ent.reduce((a,b)=>a+b.amount,0);
         const chartInstance = Chart.getChart(cvs); if(chartInstance) chartInstance.destroy();
         new Chart(cvs, { type: 'doughnut', data: { labels: ent.map(e=>e[0]), datasets: [{ data: ent.map(e=>e[1]), backgroundColor: PALETTE, borderWidth:0 }] }, options: { responsive:true, maintainAspectRatio:false, cutout:'70%', animation: { duration: 0 }, plugins:{legend:{display:false}}, onClick:(e,el)=>{ if(el.length > 0) { const idx = el[0].index; const selected = ent[idx][0]; if(type === 'exp' && !drillCatExp) { drillCatExp = selected; renderStats(); } if(type === 'inc' && !drillCatInc) { drillCatInc = selected; renderStats(); } } } } });
-        leg.innerHTML = ''; ent.forEach((e,i) => { leg.innerHTML += `<div class="legend-item" onclick="if('${type}'=='exp' && !drillCatExp){drillCatExp='${e[0]}';renderStats();} if('${type}'=='inc' && !drillCatInc){drillCatInc='${e[0]}';renderStats();}"><div style="display:flex; align-items:center; flex:1; min-width:0;"><div class="legend-dot" style="background:${PALETTE[i%PALETTE.length]}"></div><div class="legend-name">${e[0]}</div></div><div style="display:flex; align-items:center; gap:6px;"><span style="font-size:8px; color:var(--txt-sec);">${Math.round((e[1]/tot)*100)}%</span><span style="font-weight:700; font-size:10px; color:var(--txt);">$${fmt(e[1])}</span></div></div>`; });
+        leg.innerHTML = ''; ent.forEach((e,i) => { 
+            // FIX NAN: Calcular porcentaje seguro
+            const pct = tot > 0 ? Math.round((e[1]/tot)*100) : 0;
+            leg.innerHTML += `<div class="legend-item" onclick="if('${type}'=='exp' && !drillCatExp){drillCatExp='${e[0]}';renderStats();} if('${type}'=='inc' && !drillCatInc){drillCatInc='${e[0]}';renderStats();}"><div style="display:flex; align-items:center; flex:1; min-width:0;"><div class="legend-dot" style="background:${PALETTE[i%PALETTE.length]}"></div><div class="legend-name">${e[0]}</div></div><div style="display:flex; align-items:center; gap:6px;"><span style="font-size:8px; color:var(--txt-sec);">${pct}%</span><span style="font-weight:700; font-size:10px; color:var(--txt);">$${fmt(e[1])}</span></div></div>`; 
+        });
     }
     function resetChart(type) { if(type === 'exp') drillCatExp = null; if(type === 'inc') drillCatInc = null; renderStats(); }
 
@@ -896,7 +934,7 @@
     function setSubTab(t) { document.getElementById('sec-txs').style.display=t=='txs'?'flex':'none'; document.getElementById('sec-alloc').style.display=t=='alloc'?'block':'none'; document.getElementById('tab-txs').className=`tab-btn ${t=='txs'?'active':''}`; document.getElementById('tab-alloc').className=`tab-btn ${t=='alloc'?'active':''}`; }
     
     // ==========================================================
-    // NUEVA LÓGICA DE SYNC (TURBO + MANUAL)
+    // NUEVA LÓGICA DE SYNC SEGURA (CLOUD FIRST)
     // ==========================================================
     
     function setSyncState(s) {
@@ -904,74 +942,101 @@
         dot.className = `sync-dot ${s}`;
     }
 
-    // 1. FORZAR BAJADA (DESCARGAR)
-    async function forceDownload() {
-        setSyncState('saving');
+    async function initialLoad() {
+        if (!navigator.onLine) {
+            __dataReady = true; 
+            document.getElementById('loader').style.display = 'none';
+            return;
+        }
+        
         try {
             const r = await fetch(API_URL + '?t=' + Date.now());
-            // AHORA ESPERAMOS JSON (Igual que el PC)
             const cloudData = await r.json(); 
             
-            // Si la nube es más nueva o forzamos manualmente
-            if(cloudData && cloudData._updatedAtClient > (data._updatedAtClient||0)) {
+            // FUSIÓN INTELIGENTE AL INICIO
+            const cloudTime = cloudData.updatedAt || cloudData._updatedAtClient || 0;
+            const localTime = data.updatedAt || data._updatedAtClient || 0;
+
+            if(cloudData && cloudData.txs && cloudTime > localTime) {
+                console.log("Nube más reciente. Actualizando local.");
                 data = cloudData;
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
                 refreshAll();
-                setSyncState('');
-            } else {
-                setSyncState('');
             }
         } catch(e) {
-            console.error("Error Download:", e);
-            setSyncState('error');
+            console.error("Error Initial Load:", e);
+        } finally {
+            __dataReady = true; // Liberamos el bloqueo
+            document.getElementById('loader').style.display = 'none';
         }
     }
 
-    // 2. FORZAR SUBIDA (UPLOAD)
-    async function forceUpload() {
+    async function scheduleCloudSync() {
+        if(__isSyncing) return;
+        __isSyncing = true;
         setSyncState('saving');
         
-        // Actualizamos timestamp para ganar la carrera
+        try {
+            // 1. Descargar primero para verificar
+            const r = await fetch(API_URL + '?t=' + Date.now());
+            const cloudData = await r.json(); 
+            
+            const cloudTime = cloudData.updatedAt || cloudData._updatedAtClient || 0;
+            const localTime = data.updatedAt || data._updatedAtClient || 0;
+
+            if(cloudData && cloudData.txs && cloudTime > localTime) {
+                // Si la nube ganó mientras editábamos, avisar
+                if(confirm("Hay datos más nuevos en la nube. ¿Actualizar? (Se perderán cambios no guardados)")) {
+                    data = cloudData;
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+                    refreshAll();
+                }
+            } else {
+                // Si nosotros somos más nuevos (o iguales), intentamos subir
+                await forceUpload();
+            }
+        } catch(e) {
+            setSyncState('error');
+        } finally {
+            __isSyncing = false;
+            setSyncState('');
+        }
+    }
+
+    async function forceUpload() {
+        // Actualizamos timestamps
         data._updatedAtClient = Date.now(); 
+        data.updatedAt = Date.now(); 
         data._writer = DEVICE_ID;
         
-        // Guardado local
         localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
         
         try {
             const r = await fetch(API_URL, {
                 method: 'POST',
-                // Enviamos JSON Stringify (Igual que el PC)
                 body: JSON.stringify(data) 
             });
-            const res = await r.json(); // Esperamos respuesta JSON {ok:true}
-            
-            if(res.ok) {
-                setSyncState('');
-                refreshAll();
-            } else {
-                console.warn("Server Error:", res);
-                setSyncState('error');
-            }
+            const res = await r.json(); 
+            if(res.ok) setSyncState('');
+            else setSyncState('error');
         } catch(e) {
-            console.error("Error Upload:", e);
             setSyncState('error');
         }
     }
 
-    // 3. GUARDADO AUTOMÁTICO (DEBOUNCE)
     function saveData() {
-        // Guardado local instantáneo
+        // SEGURIDAD: No guardar si no estamos listos
+        if (!__dataReady) return alert("Espera a que termine la sincronización inicial.");
+
         data._updatedAtClient = Date.now();
+        data.updatedAt = Date.now();
         localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
         refreshAll();
         
-        // Feedback visual (Pendiente)
         setSyncState('pending');
-
-        if(saveTimer) clearTimeout(saveTimer);
-        saveTimer = setTimeout(() => {
-            forceUpload();
+        if(__syncTimer) clearTimeout(__syncTimer);
+        __syncTimer = setTimeout(() => {
+            scheduleCloudSync();
         }, 3000);
     }
 </script>
