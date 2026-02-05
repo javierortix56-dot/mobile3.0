@@ -496,10 +496,11 @@
     let currentDate = new Date(); currentDate.setDate(1);
     let editingSplitChildren = null; 
 
-    // --- VARIABLES DE SINCRONIZACIÓN ---
+    // --- VARIABLES DE SINCRONIZACIÓN Y SEGURIDAD ---
     let __syncTimer = null;
     let __isSyncing = false;
     let __dataReady = false; 
+    let __initialSyncComplete = false; // NUEVO: Bloquea guardado hasta sync inicial
 
     const fmt = (n) => n.toLocaleString('es-AR', {minimumFractionDigits: 0, maximumFractionDigits: 0});
     const fmtUsd = (n) => (n/1000).toFixed(1) + 'K';
@@ -519,6 +520,7 @@
     function changeMonth(d) { currentDate.setMonth(currentDate.getMonth() + d); updateDateUI(); }
     
     function saveRates() {
+        if (!__initialSyncComplete) return; // SEGURIDAD: No guardar si no estamos listos
         const key = getKey();
         if(!data.monthlyRates) data.monthlyRates={};
         data.monthlyRates[key] = { ARS: parseFloat(document.getElementById('rateArs').value)||1200, COP: parseFloat(document.getElementById('rateCop').value)||3700 };
@@ -616,10 +618,8 @@
             const el = document.createElement('div'); el.className = `tx-card ${t.exec ? 'executed' : ''}`; el.onclick = () => edit(t.id);
             let extraInfo = (t.curr && t.curr!=='ARS') ? `<span style="color:var(--accent); font-weight:800; margin-left:4px;">${t.origAmt} ${t.curr}</span>` : '';
             
-            // AQUI MOSTRAMOS LA CATEGORIA EN LUGAR DE LA CUENTA
             let catDisplay = `<span class="cat-tag">${t.cat}</span>`;
             
-            // Badge de SPLIT
             let splitBadge = (t.children && t.children.length) ? `<span class="cat-tag" style="background:#e0e7ff; color:#4338ca;">DIVIDIDO</span>` : '';
             
             let qMagic = '';
@@ -871,12 +871,12 @@
                 } 
                 // Caso 2: El padre es un split, no está vinculado, pero sus hijos sí
                 else if (e.children && e.children.length > 0) {
-                     e.children.forEach(child => {
-                         if(child.linkId == inc.id) {
+                      e.children.forEach(child => {
+                          if(child.linkId == inc.id) {
                              // Creamos un objeto visual para el hijo
                              subs.push({ ...child, id: e.id, date: e.date, isChild:true, parentDesc: e.desc });
-                         }
-                     });
+                          }
+                      });
                 }
             });
 
@@ -992,7 +992,7 @@
     function setSubTab(t) { document.getElementById('sec-txs').style.display=t=='txs'?'flex':'none'; document.getElementById('sec-alloc').style.display=t=='alloc'?'block':'none'; document.getElementById('tab-txs').className=`tab-btn ${t=='txs'?'active':''}`; document.getElementById('tab-alloc').className=`tab-btn ${t=='alloc'?'active':''}`; }
     
     // ==========================================================
-    // NUEVA LÓGICA DE SYNC SEGURA (CLOUD FIRST)
+    // NUEVA LÓGICA DE SYNC SEGURA (CLOUD FIRST) - PROTECCIÓN ACTIVADA
     // ==========================================================
     
     function setSyncState(s) {
@@ -1003,6 +1003,7 @@
     async function initialLoad() {
         if (!navigator.onLine) {
             __dataReady = true; 
+            __initialSyncComplete = true; // Si estamos offline, asumimos que es seguro usar lo local
             document.getElementById('loader').style.display = 'none';
             return;
         }
@@ -1014,14 +1015,22 @@
             const cloudTime = cloudData.updatedAt || cloudData._updatedAtClient || 0;
             const localTime = data.updatedAt || data._updatedAtClient || 0;
 
-            if(cloudData && cloudData.txs && cloudTime > localTime) {
-                console.log("Nube más reciente. Actualizando local.");
+            // CONDICIÓN DE RESCATE:
+            // Si la nube tiene datos y nosotros tenemos datos viejos O NO TENEMOS NADA (local vacío),
+            // forzamos la descarga para evitar sobrescribir con vacío.
+            if(cloudData && cloudData.txs && (cloudTime > localTime || data.txs.length === 0)) {
+                console.log("Nube más reciente o local vacío. Actualizando local.");
                 data = cloudData;
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
                 refreshAll();
             }
+            // Marcamos como seguro guardar de ahora en adelante
+            __initialSyncComplete = true; 
+
         } catch(e) {
             console.error("Error Initial Load:", e);
+            alert("Error al conectar con la nube. El guardado se ha desactivado temporalmente para proteger tus datos.");
+            // NOTA: No activamos __initialSyncComplete, así que forceUpload bloqueará intentos de guardar.
         } finally {
             __dataReady = true; 
             document.getElementById('loader').style.display = 'none';
@@ -1058,6 +1067,19 @@
     }
 
     async function forceUpload() {
+        // 1. CHEQUEO DE SEGURIDAD CRÍTICO
+        if (!__initialSyncComplete) {
+            console.warn("Guardado BLOQUEADO: No se ha completado la sincronización inicial.");
+            return;
+        }
+        
+        // 2. CHEQUEO ANTI-BORRADO ACCIDENTAL
+        // Si intentamos subir 0 transacciones pero ya hemos tenido datos antes, pedimos confirmación extrema.
+        if (data.txs.length === 0 && localStorage.getItem('HAS_HAD_DATA') === 'true') {
+             if(!confirm("ALERTA CRÍTICA: Estás a punto de borrar TODOS los datos de la nube (subir vacío). ¿Estás seguro?")) return;
+        }
+        if (data.txs.length > 0) localStorage.setItem('HAS_HAD_DATA', 'true');
+
         data._updatedAtClient = Date.now(); 
         data.updatedAt = Date.now(); 
         data._writer = DEVICE_ID;
@@ -1083,7 +1105,7 @@
     }
 
     function saveData() {
-        if (!__dataReady) return alert("Espera a que termine la sincronización inicial.");
+        if (!__dataReady) return; // No alertamos, simplemente ignoramos hasta que esté listo
 
         data._updatedAtClient = Date.now();
         data.updatedAt = Date.now();
